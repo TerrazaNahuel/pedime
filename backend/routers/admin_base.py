@@ -45,20 +45,24 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
     return store
 
 
-def check_plan_limit(store: Store, db: Session) -> str | None:
+def check_plan_limit(store: Store, db: Session, category_id: int | None = None) -> str | None:
     """
-    Verifica los límites del plan. Retorna todos los errores juntos o None.
+    Verifica los límites del plan. Retorna un error o None.
+    - Si category_id está presente (crear producto): chequea 10 productos máx en esa categoría.
+    - Si category_id es None (crear categoría): chequea 5 categorías máx.
     """
     if store.plan == "premium":
         return None
     from models import Category, Product
-    errs = []
-    cat_count = db.query(Category).filter(Category.store_id == store.id).count()
-    if cat_count >= 5:
-        errs.append("máximo 5 categorías")
-    prod_count = db.query(Product).filter(Product.store_id == store.id).count()
-    if prod_count >= 20:
-        errs.append("máximo 20 productos")
-    if errs:
-        return "Plan free: " + ". ".join(errs) + ". Actualizá a premium."
+    if category_id is not None:
+        prod_count = db.query(Product).filter(
+            Product.category_id == category_id,
+            Product.store_id == store.id,
+        ).count()
+        if prod_count >= 10:
+            return "Plan free: máximo 10 productos por categoría. Actualizá a premium."
+    else:
+        cat_count = db.query(Category).filter(Category.store_id == store.id).count()
+        if cat_count >= 5:
+            return "Plan free: máximo 5 categorías. Actualizá a premium."
     return None

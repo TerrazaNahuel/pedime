@@ -41,7 +41,7 @@ def create_product(
     """Crea un nuevo producto. Valida longitud, precio, URL de imagen y límites del plan."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
-    limit_err = check_plan_limit(store, db)
+    limit_err = check_plan_limit(store, db, category_id=category_id)
     if limit_err:
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(limit_err), status_code=302)
     if len(name) > 100:
