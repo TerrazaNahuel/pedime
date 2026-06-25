@@ -639,15 +639,15 @@ whatsappBtn.onclick = () => {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
     const total = subtotal + deliveryCost;
 
-    let msg = "Hola, quisiera pedir:%0A";
-    items.forEach(it => { msg += "- " + it.qty + "x " + it.name + " ($" + (it.price * it.qty).toLocaleString("es-AR") + ")%0A"; });
-    msg += "%0A📍 " + (isDelivery ? "A domicilio" : "Retiro en local");
-    if (isDelivery && address) { msg += "%0A   Dirección: " + address; if (reference) msg += "%0A   Referencia: " + reference; }
-    if (comment) msg += "%0A📝 " + comment;
-    msg += "%0A💳 Pago: " + payLabel;
-    msg += "%0A─ ─ ─ ─ ─ ─ ─%0A";
-    msg += "Subtotal: $" + subtotal.toLocaleString("es-AR") + "%0A";
-    if (deliveryCost > 0) msg += "Envío: $" + deliveryCost.toLocaleString("es-AR") + "%0A";
+    let msg = "Hola, quisiera pedir:\n";
+    items.forEach(it => { msg += "- " + it.qty + "x " + it.name + " ($" + (it.price * it.qty).toLocaleString("es-AR") + ")\n"; });
+    msg += "\n📍 " + (isDelivery ? "A domicilio" : "Retiro en local");
+    if (isDelivery && address) { msg += "\n   Dirección: " + address; if (reference) msg += "\n   Referencia: " + reference; }
+    if (comment) msg += "\n📝 " + comment;
+    msg += "\n💳 Pago: " + payLabel;
+    msg += "\n─ ─ ─ ─ ─ ─ ─\n";
+    msg += "Subtotal: $" + subtotal.toLocaleString("es-AR") + "\n";
+    if (deliveryCost > 0) msg += "Envío: $" + deliveryCost.toLocaleString("es-AR") + "\n";
     msg += "Total: $" + total.toLocaleString("es-AR");
 
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), "_blank");
