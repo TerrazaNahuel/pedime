@@ -51,15 +51,31 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Evento lifespan: ejecuta migrations (Alembic) y seed data al arrancar."""
+    import sys as _sys
+    _sys.stdout.flush()
+    _sys.stderr.flush()
+    logger.info("=== LIFESPAN START ===")
+    logger.info("DATABASE_URL set: %s", "yes" if os.getenv("DATABASE_URL") else "no")
+    logger.info("PORT: %s", os.getenv("PORT", "not set"))
     try:
         alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "alembic.ini"))
         command.upgrade(alembic_cfg, "head")
         logger.info("Base de datos migrada (alembic upgrade head)")
     except Exception:
         logger.error("Error ejecutando migrations", exc_info=True)
+        _sys.stdout.flush()
+        _sys.stderr.flush()
         raise
-    seed_default_store()
+    try:
+        seed_default_store()
+        logger.info("Seed data ejecutado")
+    except Exception:
+        logger.error("Error en seed", exc_info=True)
+    logger.info("=== LIFESPAN READY ===")
+    _sys.stdout.flush()
+    _sys.stderr.flush()
     yield
+    logger.info("=== LIFESPAN SHUTDOWN ===")
 
 
 app = FastAPI(title="Pedime", lifespan=lifespan)
@@ -124,7 +140,14 @@ app.include_router(auth.router)
 app.include_router(admin_super.router)
 
 
+@app.get("/health")
+def health():
+    """Health check para Railway."""
+    return {"status": "ok"}
+
+
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
     """Landing page principal."""
+    logger.info("Serving landing page, base_url=%s", request.base_url)
     return templates.TemplateResponse(request, "landing.html")
