@@ -13,19 +13,28 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
-
 revision: str = "e1f2a3b4c5d6"
 down_revision: str | None = "ddacf23d05d2"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+# (source_table, fk_constraint_name, referent_table, local_columns)
 FK_NAMES = [
     ("categories", "categories_store_id_fkey", "stores", ["store_id"]),
     ("products", "products_store_id_fkey", "stores", ["store_id"]),
     ("products", "products_category_id_fkey", "categories", ["category_id"]),
 ]
+
+
+def _table_exists(bind, table_name):
+    result = bind.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.tables WHERE table_name = :name AND table_schema = 'public'"
+        ),
+        {"name": table_name},
+    )
+    return result.scalar() is not None
 
 
 def upgrade():
@@ -34,8 +43,13 @@ def upgrade():
         return
 
     for table, fk_name, ref, columns in FK_NAMES:
-        op.drop_constraint(fk_name, table, type_="foreignkey")
-        op.create_foreign_key(fk_name, ref, columns, ["id"], ondelete="CASCADE")
+        if not _table_exists(bind, table):
+            continue
+        try:
+            op.drop_constraint(fk_name, table, type_="foreignkey")
+        except Exception:
+            pass
+        op.create_foreign_key(fk_name, table, ref, columns, ["id"], ondelete="CASCADE")
 
 
 def downgrade():
@@ -44,5 +58,10 @@ def downgrade():
         return
 
     for table, fk_name, ref, columns in FK_NAMES:
-        op.drop_constraint(fk_name, table, type_="foreignkey")
-        op.create_foreign_key(fk_name, ref, columns, ["id"])
+        if not _table_exists(bind, table):
+            continue
+        try:
+            op.drop_constraint(fk_name, table, type_="foreignkey")
+        except Exception:
+            pass
+        op.create_foreign_key(fk_name, table, ref, columns, ["id"])
