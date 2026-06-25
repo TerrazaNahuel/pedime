@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Crear cuenta — Pedime{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <a href="/" class="text-2xl font-bold text-emerald-400">Pedime</a>
+            <p class="text-gray-400 mt-1">Creá tu tienda digital gratis</p>
+        </div>
+        <!-- Formulario de registro con CSRF -->
+        <form method="POST" action="/register" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% if error %}
+                <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2">{{ error }}</div>
+            {% endif %}
+
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Nombre del comercio</label>
+                <input type="text" name="name" required
+                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Email</label>
+                    <input type="email" name="email" required
+                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">WhatsApp</label>
+                    <input type="text" name="whatsapp" required placeholder="5491134567890"
+                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Slug (link de tu tienda)</label>
+                <div class="flex items-center gap-2 bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-500">
+                    <span>pedime.app/menu/</span>
+                    <input type="text" name="slug" required placeholder="mi-pizzeria"
+                           class="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none border-none p-0">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Contraseña</label>
+                    <input type="password" name="password" required minlength="8"
+                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Confirmar</label>
+                    <input type="password" name="confirm_password" required minlength="8"
+                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
+                Crear cuenta
+            </button>
+
+            <p class="text-center text-sm text-gray-500">
+                ¿Ya tenés cuenta?
+                <a href="/login" class="text-emerald-400 hover:text-emerald-300">Iniciar sesión</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}

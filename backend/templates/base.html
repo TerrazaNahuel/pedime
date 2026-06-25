@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pedime{% endblock %}</title>
+    <!-- Tailwind CSS vía CDN -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { accent: '#10b981' } } } }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<!-- Fondo oscuro global, texto blanco, fuente sans-serif -->
+<body class="bg-[#0a0a0a] text-white font-sans antialiased min-h-screen">
+    {% block content %}{% endblock %}
+</body>
+</html>

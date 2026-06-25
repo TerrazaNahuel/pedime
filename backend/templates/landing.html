@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Pedime — Tu catálogo digital en segundos{% endblock %}
+{% block extra_head %}
+<style>
+    .bg-hero-gradient {
+        background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.1), transparent);
+    }
+</style>
+{% endblock %}
+{% block content %}
+<!-- Barra de navegación principal -->
+<nav class="max-w-5xl mx-auto px-4 py-5 flex items-start justify-end relative">
+    <img src="/static/img/logo-6.png" alt="Pedime" class="absolute -left-12 top-1/2 -translate-y-1/4 w-48 h-48 md:w-64 md:h-64 rounded-full object-cover bg-[#0a0a0a]">
+    <div class="flex items-center gap-4">
+        <a href="/register" class="text-sm text-gray-400 hover:text-white transition">Registrarse</a>
+        <a href="/login" class="text-sm border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold py-2 px-4 rounded-xl transition">Iniciar sesión</a>
+    </div>
+</nav>
+
+<!-- Hero: título principal y CTA -->
+<section class="max-w-5xl mx-auto px-4 pt-16 pb-20 text-center">
+    <h1 class="text-7xl sm:text-8xl md:text-9xl lg:text-[12rem] font-bold leading-none mb-6">
+        <span class="text-emerald-400">Pedi</span><span class="text-emerald-200">Me</span>
+    </h1>
+    <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl transition text-lg mb-6">
+        Crear mi tienda gratis
+    </a>
+    <p class="text-white text-4xl sm:text-5xl font-bold max-w-2xl mx-auto mb-4">
+        Tu catálogo digital en segundos
+    </p>
+    <p class="text-gray-400 max-w-xl mx-auto mb-6">
+        Creá tu catálogo online, compartí el link en redes sociales y recibí pedidos directo por WhatsApp. Sin apps, sin comisiones.
+    </p>
+    <a href="/menu/sinculpa" class="text-gray-400 hover:text-white transition">
+        Ver demo →
+    </a>
+</section>
+
+<!-- Sección "Cómo funciona": 4 pasos -->
+<section class="max-w-4xl mx-auto px-4 pb-20">
+    <h2 class="text-2xl font-bold text-center mb-12">Cómo funciona</h2>
+    <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 text-center flex flex-col items-center justify-center min-h-[200px]">
+            <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 shrink-0">
+                <span class="text-emerald-400 text-xl font-bold">1</span>
+            </div>
+            <h3 class="font-bold mb-1">Registrate</h3>
+            <p class="text-sm text-gray-500">Crea tu cuenta en segundos con tu email</p>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 text-center flex flex-col items-center justify-center min-h-[200px]">
+            <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 shrink-0">
+                <span class="text-emerald-400 text-xl font-bold">2</span>
+            </div>
+            <h3 class="font-bold mb-1">Cargá tus productos</h3>
+            <p class="text-sm text-gray-500">Agregá productos, precios y categorías</p>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 text-center flex flex-col items-center justify-center min-h-[200px]">
+            <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 shrink-0">
+                <span class="text-emerald-400 text-xl font-bold">3</span>
+            </div>
+            <h3 class="font-bold mb-1">Compartí el link</h3>
+            <p class="text-sm text-gray-500">Publicá tu link directo en redes sociales</p>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 text-center flex flex-col items-center justify-center min-h-[200px]">
+            <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 shrink-0">
+                <span class="text-emerald-400 text-xl font-bold">4</span>
+            </div>
+            <h3 class="font-bold mb-1">Recibí pedidos</h3>
+            <p class="text-sm text-gray-500">Los pedidos te llegan directo a WhatsApp</p>
+        </div>
+    </div>
+</section>
+
+<!-- Sección "Para quién es": tipos de comercios variados -->
+<section class="max-w-4xl mx-auto px-4 pb-20">
+    <h2 class="text-2xl font-bold text-center mb-12">¿Para quién es?</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center h-[110px] text-center">
+            <span class="text-3xl mb-2">🍕</span>
+            <span class="font-medium">Restaurantes</span>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center h-[110px] text-center">
+            <span class="text-3xl mb-2">🥤</span>
+            <span class="font-medium">Bebidas</span>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center h-[110px] text-center">
+            <span class="text-3xl mb-2">👕</span>
+            <span class="font-medium">Indumentaria</span>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center h-[110px] text-center">
+            <span class="text-3xl mb-2">🧹</span>
+            <span class="font-medium">Limpieza</span>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center h-[110px] text-center">
+            <span class="text-3xl mb-2">🎁</span>
+            <span class="font-medium">Regalería</span>
+        </div>
+        <div class="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center h-[110px] text-center">
+            <span class="text-3xl mb-2">🛒</span>
+            <span class="font-medium">Almacén / Tienda</span>
+        </div>
+    </div>
+</section>
+
+<!-- CTA final -->
+<section class="max-w-4xl mx-auto px-4 pb-20 text-center">
+    <div class="bg-gradient-to-br from-emerald-500/10 to-transparent rounded-3xl p-10 border border-emerald-500/10">
+        <h2 class="text-2xl font-bold mb-3">Empezá hoy, es gratis</h2>
+        <p class="text-gray-400 mb-6">Sin tarjetas, sin compromisos. Creá tu menú en 2 minutos.</p>
+        <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl transition">
+            Crear mi tienda gratis
+        </a>
+    </div>
+</section>
+
+<!-- Footer con año dinámico -->
+<footer class="max-w-5xl mx-auto px-4 py-8 border-t border-white/5 text-center text-sm text-gray-500">
+    <p>© {{ now().year }} Nahuel Axel Terraza. Todos los derechos reservados.</p>
+</footer>
+{% endblock %}

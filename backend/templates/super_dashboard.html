@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Super Admin — {{ store.name }}{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-4">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-xl font-bold">👑 Super Admin</h1>
+            <p class="text-sm text-gray-400">Gestión global de todas las tiendas</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Super Admin</span>
+            <a href="/admin/dashboard" class="text-sm text-emerald-400 hover:text-emerald-300">Volver a mi dashboard</a>
+            <form method="POST" action="/admin/logout">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="text-sm text-gray-400 hover:text-white transition">Cerrar sesión</button>
+            </form>
+        </div>
+    </div>
+
+    {% if flash_password %}
+        <div class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm rounded-xl px-4 py-3 mb-4">
+            <strong>Password reseteada para {{ flash_store_name }}.</strong><br>
+            Nueva contraseña: <code class="bg-black/30 px-2 py-0.5 rounded font-mono">{{ flash_password }}</code><br>
+            <span class="text-xs text-gray-500">Copiala ahora — solo se muestra una vez.</span>
+        </div>
+    {% endif %}
+    {% if success %}
+        <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-xl px-4 py-3 mb-4">{{ success }}</div>
+    {% endif %}
+    {% if error %}
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">{{ error }}</div>
+    {% endif %}
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-400 border-b border-white/10">
+                    <th class="text-left py-3 px-2">ID</th>
+                    <th class="text-left py-3 px-2">Nombre</th>
+                    <th class="text-left py-3 px-2">Slug</th>
+                    <th class="text-left py-3 px-2">Email</th>
+                    <th class="text-left py-3 px-2">Plan</th>
+                    <th class="text-left py-3 px-2">Activo</th>
+                    <th class="text-left py-3 px-2">Super</th>
+                    <th class="text-left py-3 px-2">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in stores %}
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="py-3 px-2 text-gray-500">{{ s.id }}</td>
+                    <td class="py-3 px-2 font-medium">{{ s.name }}</td>
+                    <td class="py-3 px-2 text-gray-400">{{ s.slug }}</td>
+                    <td class="py-3 px-2 text-gray-400">{{ s.email }}</td>
+                    <td class="py-3 px-2">
+                        <form method="POST" action="/admin/super/{{ s.id }}/set-plan" class="flex items-center gap-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <select name="plan" onchange="this.form.submit()"
+                                    class="bg-[#0a0a0a] border border-white/10 rounded-lg px-2 py-1 text-white text-xs">
+                                <option value="free" {{ 'selected' if s.plan == 'free' else '' }}>Free</option>
+                                <option value="premium" {{ 'selected' if s.plan == 'premium' else '' }}>Premium</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td class="py-3 px-2">
+                        <form method="POST" action="/admin/super/{{ s.id }}/toggle-active" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button class="text-xs px-2 py-1 rounded-lg transition {{ 'bg-emerald-500/20 text-emerald-400' if s.is_active else 'bg-red-500/20 text-red-400' }}">
+                                {{ 'Activo' if s.is_active else 'Inactivo' }}
+                            </button>
+                        </form>
+                    </td>
+                    <td class="py-3 px-2">
+                        <form method="POST" action="/admin/super/{{ s.id }}/make-superadmin" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button class="text-xs px-2 py-1 rounded-lg transition {{ 'bg-amber-500/20 text-amber-400' if s.is_superadmin else 'bg-white/5 text-gray-400' }}">
+                                {{ 'Si' if s.is_superadmin else 'No' }}
+                            </button>
+                        </form>
+                    </td>
+                    <td class="py-3 px-2">
+                        <div class="flex items-center gap-1">
+                            <form method="POST" action="/admin/super/{{ s.id }}/reset-password" style="display:inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="text-xs text-blue-400 hover:text-blue-300 px-2 py-1" title="Resetear contraseña">🔑</button>
+                            </form>
+                            <form method="POST" action="/admin/super/{{ s.id }}/delete" onsubmit="return confirm('¿Eliminar {{ s.name|tojson }}?')" style="display:inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="text-xs text-red-400 hover:text-red-300 px-2 py-1" title="Eliminar tienda">🗑️</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not stores %}
+        <div class="text-center py-12 text-gray-500">
+            <p>No hay tiendas registradas</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

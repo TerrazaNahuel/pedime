@@ -1,0 +1,74 @@
+"""
+Modelos SQLAlchemy para la base de datos del menú digital.
+
+Tres tablas principales:
+  - stores: cada comercio registrado
+  - categories: categorías de productos por comercio
+  - products: productos individuales dentro de una categoría
+"""
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import relationship
+from database import Base
+from datetime import datetime, timezone
+
+
+class Store(Base):
+    """Comercio registrado en la plataforma. Cada store tiene su propio slug y menú."""
+
+    __tablename__ = "stores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), unique=True, index=True, nullable=False)  # URL amigable única
+    email = Column(String(200), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    whatsapp = Column(String(50), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    delivery_available = Column(Boolean, default=True)
+    delivery_price = Column(Numeric(10, 2), default=0.0)
+    payment_transfer = Column(Boolean, default=True)
+    payment_cash = Column(Boolean, default=True)
+    primary_color = Column(String(7), default="#10b981")
+    logo_url = Column(String(500), default="")
+    opening_time = Column(String(5), default="")  # HH:MM
+    closing_time = Column(String(5), default="")  # HH:MM
+    plan = Column(String(20), default="free")  # "free" | "premium"
+    plan_expires_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_superadmin = Column(Boolean, default=False)
+
+    categories = relationship("Category", back_populates="store", cascade="all, delete-orphan")
+    products = relationship("Product", back_populates="store", cascade="all, delete-orphan")
+
+
+class Category(Base):
+    """Agrupación de productos (ej: Pizzas, Bebidas, Promos)."""
+
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+
+    store = relationship("Store", back_populates="categories")
+    products = relationship("Product", back_populates="category", cascade="all, delete-orphan")
+
+
+class Product(Base):
+    """Producto individual dentro de una categoría (ej: Muzzarella, Coca-Cola)."""
+
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500), default="")
+    price = Column(Numeric(10, 2), nullable=False)
+    available = Column(Boolean, default=True)
+    image_url = Column(String(500), default="")
+    sort_order = Column(Integer, default=0)  # Orden personalizado por drag & drop
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+
+    category = relationship("Category", back_populates="products")
+    store = relationship("Store", back_populates="products")
