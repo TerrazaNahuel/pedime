@@ -17,6 +17,7 @@ class ProductOut(BaseModel):
     description: str
     price: float  # Serializado desde Decimal de la DB
     available: bool
+    stock: int = 0  # 0 = sin límite
     image_url: str = ""
     category_id: int
 

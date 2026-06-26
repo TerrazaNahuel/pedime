@@ -161,14 +161,13 @@ def register(
     if not re.match(r"^[a-z0-9-]+$", slugify(slug)):
         return render_error("El slug solo puede contener letras, números y guiones")
 
-    # Verifica unicidad de email y slug
-    if db.query(Store).filter(Store.email == email).first():
-        return render_error("Ya existe una cuenta con ese email")
-
     final_slug = slugify(slug)
     if not final_slug:
         return render_error("El slug no puede estar vacío")
 
+    # Verifica unicidad de email y slug (atómicos en la DB con unique constraints)
+    if db.query(Store).filter(Store.email == email).first():
+        return render_error("Ya existe una cuenta con ese email")
     if db.query(Store).filter(Store.slug == final_slug).first():
         return render_error("Ese slug ya está en uso. Elegí otro.")
 
@@ -185,7 +184,10 @@ def register(
         db.commit()
     except IntegrityError:
         db.rollback()
-        return render_error("Ese email o slug ya está registrado. Intentá con otros.")
+        existing_email = db.query(Store).filter(Store.email == email).first()
+        if existing_email:
+            return render_error("Ya existe una cuenta con ese email")
+        return render_error("Ese slug ya está en uso. Elegí otro.")
 
     logger.info("Registro exitoso store_id=%s slug=%s email=%s", store.id, final_slug, redact_email(email))
     # Regenera la sesión

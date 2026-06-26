@@ -65,6 +65,7 @@ class Product(Base):
     description = Column(String(500), default="")
     price = Column(Numeric(10, 2), nullable=False)
     available = Column(Boolean, default=True)
+    stock = Column(Integer, default=0)  # 0 = sin límite de stock
     image_url = Column(String(500), default="")
     sort_order = Column(Integer, default=0)  # Orden personalizado por drag & drop
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)

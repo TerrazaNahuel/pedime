@@ -34,6 +34,7 @@ def create_product(
     name: str = Form(...), description: str = Form(""),
     price: Decimal = Form(...), category_id: int = Form(...),
     image_url: str = Form(""),
+    stock: int = Form(0),
     available: str = Form("1"),
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
@@ -50,6 +51,8 @@ def create_product(
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La descripción es demasiado larga"), status_code=302)
     if price < 0:
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El precio no puede ser negativo"), status_code=302)
+    if stock < 0:
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El stock no puede ser negativo"), status_code=302)
     if not validate_url(image_url):
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La URL de la imagen no es válida"), status_code=302)
     if len(image_url) > 500:
@@ -61,7 +64,7 @@ def create_product(
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Categoría no encontrada"), status_code=302)
     db.add(Product(name=name, description=description, price=price,
                    image_url=image_url, category_id=category_id, store_id=store.id,
-                   available=(available == "1")))
+                   stock=stock, available=(available == "1")))
     db.commit()
     logger.info("Producto creado store_id=%s category_id=%s", store.id, category_id)
     return RedirectResponse(url="/admin/dashboard", status_code=302)
@@ -74,6 +77,7 @@ def update_product(
     price: Decimal = Form(...), category_id: int = Form(...),
     available: str = Form("0"),
     image_url: str = Form(""),
+    stock: int = Form(0),
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -86,6 +90,8 @@ def update_product(
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La descripción es demasiado larga"), status_code=302)
     if price < 0:
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El precio no puede ser negativo"), status_code=302)
+    if stock < 0:
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El stock no puede ser negativo"), status_code=302)
     prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not prod:
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Producto no encontrado"), status_code=302)
@@ -105,6 +111,7 @@ def update_product(
     prod.category_id = category_id
     prod.available = (available == "1")
     prod.image_url = image_url
+    prod.stock = stock
     db.commit()
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
@@ -114,21 +121,23 @@ def duplicate_product(product_id: int, request: Request, csrf_token: str = Form(
     """Duplica un producto agregando '(copia)' al nombre."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
-    limit_err = check_plan_limit(store, db)
-    if limit_err:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(limit_err), status_code=302)
     original = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not original:
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Producto no encontrado"), status_code=302)
+    limit_err = check_plan_limit(store, db, category_id=original.category_id)
+    if limit_err:
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(limit_err), status_code=302)
     dup_name = original.name[:92] + " (copia)"
     dup = Product(
         name=dup_name,
         description=original.description,
         price=original.price,
+        stock=original.stock,
         image_url=original.image_url,
         available=original.available,
         category_id=original.category_id,
         store_id=store.id,
+        sort_order=original.sort_order,
     )
     db.add(dup)
     db.commit()
@@ -200,9 +209,9 @@ def export_products_csv(request: Request, db: Session = Depends(get_db)):
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["name", "description", "price", "category_id", "image_url", "available"])
+    writer.writerow(["name", "description", "price", "category_id", "image_url", "available", "stock"])
     for p in products:
-        writer.writerow([p.name, p.description or "", str(p.price), p.category_id, p.image_url or "", "1" if p.available else "0"])
+        writer.writerow([p.name, p.description or "", str(p.price), p.category_id, p.image_url or "", "1" if p.available else "0", str(p.stock or 0)])
 
     return Response(
         content=output.getvalue(),
@@ -225,10 +234,6 @@ def import_products_csv(
     """
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
-
-    limit_err = check_plan_limit(store, db)
-    if limit_err:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(limit_err), status_code=302)
 
     if file.filename is None or not file.filename.endswith(".csv"):
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El archivo debe ser CSV"), status_code=302)
@@ -282,12 +287,24 @@ def import_products_csv(
             errors.append(f"Fila {row_num}: categoría {category_id} no encontrada")
             continue
 
+        limit_err = check_plan_limit(store, db, category_id=category_id)
+        if limit_err:
+            errors.append(f"Fila {row_num}: {limit_err}")
+            continue
+
         available = row.get("available", "1").strip() in ("1", "true", "yes")
+
+        try:
+            stock = int(row.get("stock", "0").strip() or "0")
+        except (ValueError, TypeError):
+            stock = 0
+        if stock < 0:
+            stock = 0
 
         db.add(Product(
             name=name, description=description, price=price,
-            image_url=image_url, category_id=category_id, store_id=store.id,
-            available=available,
+            stock=stock, image_url=image_url, category_id=category_id,
+            store_id=store.id, available=available,
         ))
         created += 1
 
