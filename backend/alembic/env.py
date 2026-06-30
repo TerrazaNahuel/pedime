@@ -8,10 +8,11 @@ from sqlalchemy import engine_from_config, pool
 # access to the values within the .ini file in use.
 config = context.config
 
-# En Railway, usar DATABASE_URL de PostgreSQL; sino usa el default SQLite del .ini
+# En Railway/Render, usar DATABASE_URL de PostgreSQL; sino usa el default SQLite del .ini
 database_url = os.getenv("DATABASE_URL", "")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    url = database_url.replace("postgresql://", "postgresql+psycopg://", 1) if database_url.startswith("postgresql") else database_url
+    config.set_main_option("sqlalchemy.url", url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
