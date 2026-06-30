@@ -11,6 +11,7 @@ Fixtures disponibles:
 
 import os
 import sys
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -20,12 +21,12 @@ os.environ["ENVIRONMENT"] = "test"
 # Tests usan SQLite en memoria compartida — no toca la DB de desarrollo (backend/data/pedime.db)
 os.environ["DATABASE_URL"] = "sqlite://"
 
-from database import Base, engine, SessionLocal
-from main import app
-from models import Store, Category
-from passlib.hash import bcrypt
-from ratelimit import RateLimiter
 import re
+
+from database import Base, SessionLocal, engine
+from main import app
+from models import Category, Store
+from passlib.hash import bcrypt
 
 
 @pytest.fixture(autouse=True)

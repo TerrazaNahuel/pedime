@@ -5,18 +5,21 @@ Operaciones: crear, editar, duplicar, eliminar, toggle visibilidad,
 reordenar (drag & drop), exportar e importar CSV.
 """
 
-from fastapi import APIRouter, Depends, Form, Request, UploadFile, File
-from fastapi.responses import RedirectResponse, Response
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Category, Product
-from decimal import Decimal
-from routers.admin_base import get_authenticated_store, check_plan_limit, logger
-from csrf import validate_csrf
 import csv
 import io
 import re
 import urllib.parse
+from decimal import Decimal
+
+from csrf import validate_csrf
+from database import get_db
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.responses import RedirectResponse, Response
+from models import Category, Product
+from routers.admin_base import check_plan_limit, get_authenticated_store, logger
+from sqlalchemy.orm import Session
+
+from backend.settings import MAX_FILE_SIZE, MAX_REORDER_IDS
 
 router = APIRouter()
 
@@ -185,8 +188,8 @@ def reorder_products(request: Request, product_ids: str = Form(...), csrf_token:
         ids = [int(x) for x in product_ids.split(",") if x.strip()]
     except ValueError:
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("IDs de producto inválidos"), status_code=302)
-    if len(ids) > 500:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Demasiados productos (máx 500)"), status_code=302)
+    if len(ids) > MAX_REORDER_IDS:
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(f"Demasiados productos (máx {MAX_REORDER_IDS})"), status_code=302)
     products_to_update = db.query(Product).filter(
         Product.id.in_(ids),
         Product.store_id == store.id,
@@ -238,10 +241,9 @@ def import_products_csv(
     if file.filename is None or not file.filename.endswith(".csv"):
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El archivo debe ser CSV"), status_code=302)
 
-    MAX_FILE_SIZE = 10 * 1024 * 1024
     raw = file.file.read(MAX_FILE_SIZE + 1)
     if len(raw) > MAX_FILE_SIZE:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El archivo es demasiado grande (máx 10 MB)"), status_code=302)
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(f"El archivo es demasiado grande (máx {MAX_FILE_SIZE // (1024*1024)} MB)"), status_code=302)
 
     content_type = file.content_type or ""
     if content_type not in ("text/csv", "text/plain", "application/octet-stream", ""):

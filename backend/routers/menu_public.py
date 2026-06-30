@@ -5,14 +5,15 @@ Sirve la página HTML del menú y la API JSON con los datos del comercio
 (productos disponibles, categorías, configuración).
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Store, Category, Product
-from schemas import MenuResponse, CategoryOut, ProductOut
 import logging
 import os
+
+from database import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
+from models import Category, Product, Store
+from schemas import CategoryOut, MenuResponse, ProductOut
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 logger = logging.getLogger("pedime.menu")
@@ -32,7 +33,7 @@ def get_menu_html():
         raise HTTPException(status_code=404, detail="Página de menú no encontrada")
     current_mtime = os.path.getmtime(menu_path)
     if _menu_html_cache is None or current_mtime > _menu_html_mtime:
-        with open(menu_path, "r", encoding="utf-8") as f:
+        with open(menu_path, encoding="utf-8") as f:
             _menu_html_cache = f.read()
         _menu_html_mtime = current_mtime
         logger.info("menu.html cachead en memoria")

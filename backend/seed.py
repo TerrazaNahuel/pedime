@@ -5,13 +5,14 @@ Se ejecuta automáticamente al iniciar el servidor si no existe ningún store.
 Crea un store de ejemplo con categorías y productos, y loguea la contraseña generada.
 """
 
-from database import SessionLocal
-from models import Store, Category, Product
-from passlib.hash import bcrypt
-from decimal import Decimal
 import logging
 import secrets
 import string
+from decimal import Decimal
+
+from database import SessionLocal
+from models import Category, Product, Store
+from passlib.hash import bcrypt
 
 logger = logging.getLogger("pedime.seed")
 

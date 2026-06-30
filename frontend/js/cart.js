@@ -34,7 +34,9 @@ function saveCartState() {
             deliveryReference,
             orderComment,
         }));
-    } catch {}
+    } catch {
+        console.warn("Pedime: no se pudo guardar el estado del carrito en localStorage");
+    }
 }
 
 function loadCartState() {
@@ -48,7 +50,9 @@ function loadCartState() {
         if (data.deliveryAddress) deliveryAddress = data.deliveryAddress;
         if (data.deliveryReference) deliveryReference = data.deliveryReference;
         if (data.orderComment) orderComment = data.orderComment;
-    } catch {}
+    } catch {
+        console.warn("Pedime: no se pudo cargar el estado del carrito desde localStorage");
+    }
 }
 
 /**

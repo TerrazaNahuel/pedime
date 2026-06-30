@@ -6,9 +6,8 @@ exportar/importar CSV), categorías (crear, editar, eliminar),
 settings (actualizar, validaciones, password, logout).
 """
 
-import re
-import csv
 import io
+import re
 import urllib.parse
 
 

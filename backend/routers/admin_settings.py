@@ -5,17 +5,20 @@ Permite actualizar nombre, email, WhatsApp, contraseña, delivery,
 métodos de pago, personalización visual y horarios.
 """
 
-from fastapi import APIRouter, Depends, Form, Request
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Store, Category, Product
-from passlib.hash import bcrypt
-from decimal import Decimal
-from routers.admin_base import get_authenticated_store, templates, logger
-from csrf import validate_csrf, COOKIE_CONFIG
-from ratelimit import RateLimiter
-import secrets
 import re
+import secrets
+from decimal import Decimal
+
+from csrf import COOKIE_CONFIG, validate_csrf
+from database import get_db
+from fastapi import APIRouter, Depends, Form, Request
+from models import Category, Product, Store
+from passlib.hash import bcrypt
+from ratelimit import RateLimiter
+from routers.admin_base import get_authenticated_store, logger, templates
+from sqlalchemy.orm import Session
+
+from backend.settings import PASSWORD_CHANGE_MAX_ATTEMPTS, PASSWORD_CHANGE_WINDOW_SECONDS
 
 router = APIRouter()
 
@@ -82,7 +85,7 @@ def update_settings(
     # Cambio de contraseña (opcional) — con rate limit
     if current_password and new_password:
         rate_key = f"password_change:{store.id}"
-        if not rate_limiter.check(rate_key, max_attempts=5, window_seconds=60):
+        if not rate_limiter.check(rate_key, max_attempts=PASSWORD_CHANGE_MAX_ATTEMPTS, window_seconds=PASSWORD_CHANGE_WINDOW_SECONDS):
             return render_with(err="Demasiados intentos de cambio de contraseña. Esperá un minuto.")
         if not bcrypt.verify(current_password, store.password_hash):
             return render_with(err="Contraseña actual incorrecta")

@@ -4,14 +4,15 @@ CRUD de categorías del panel de administración.
 Operaciones: crear, editar nombre y eliminar (con cascade a productos).
 """
 
+import urllib.parse
+
+from csrf import validate_csrf
+from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from database import get_db
 from models import Category
-from routers.admin_base import get_authenticated_store, check_plan_limit, logger
-from csrf import validate_csrf
-import urllib.parse
+from routers.admin_base import check_plan_limit, get_authenticated_store, logger
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

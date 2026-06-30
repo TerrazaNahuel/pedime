@@ -5,16 +5,17 @@ Incluye los sub-routers de productos, categorías y settings.
 Provee el dashboard principal y el logout.
 """
 
+import secrets
+
+from csrf import COOKIE_CONFIG, validate_csrf
+from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Store, Category, Product
-from routers.admin_base import get_authenticated_store, templates, logger
-from routers import admin_products, admin_categories, admin_settings
-from csrf import validate_csrf, COOKIE_CONFIG
+from models import Category, Product
 from ratelimit import RateLimiter
-import secrets
+from routers import admin_categories, admin_products, admin_settings
+from routers.admin_base import get_authenticated_store, logger, templates
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 logout_limiter = RateLimiter()

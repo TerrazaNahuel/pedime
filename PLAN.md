@@ -141,4 +141,27 @@
 
 **Leyenda:** ✅ Completado | ⏳ Pendiente | ❌ Eliminado
 
+## 🎨 FASE 11 — Logo y Branding
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 89 | Landing page rebrand: "menú digital" → "catálogo digital", "Crear mi menú" → "Crear mi tienda", "Cargá tu menú" → "Cargá tus productos" | ✅ |
+| 90 | 6 cards "¿Para quién es?" variadas | ✅ |
+| 91 | Logo original restaurado (1076×718), display círculo 160×160 con `object-contain` | ✅ |
+| 92 | Logo posicionado `-left-8` + `z-50` para visibilidad en mobile | ✅ |
+| 93 | Favicon (logo-6.png como favicon.ico) en pestaña del navegador | ✅ |
+
+## 🐛 FASE 12 — Bugfixes
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 94 | Cuentas duplicadas con mismo email — IntegrityError distingue email vs slug | ✅ |
+| 95 | Stock opcional en producto (0 = sin límite) — modelo, migración, form, API, CSV | ✅ |
+| 96 | Duplicado copia `sort_order` para aparecer justo debajo del original | ✅ |
+| 97 | Límite 10 productos por categoría en duplicar e importar CSV | ✅ |
+
+---
+
+**Leyenda:** ✅ Completado | ⏳ Pendiente | ❌ Eliminado
+
 Última actualización: 25/06/2026

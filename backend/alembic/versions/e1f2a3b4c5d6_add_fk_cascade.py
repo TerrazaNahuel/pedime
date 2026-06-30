@@ -9,10 +9,11 @@ Create Date: 2026-06-25 11:30:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+
 revision: str = "e1f2a3b4c5d6"
 down_revision: str | None = "ddacf23d05d2"
 branch_labels: str | Sequence[str] | None = None

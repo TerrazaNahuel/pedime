@@ -1,15 +1,23 @@
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Store
-from passlib.hash import bcrypt
-from routers.admin_base import get_authenticated_store, templates, logger
-from routers.admin_base import NotAuthenticatedException, NotAuthorizedException
-from csrf import validate_csrf, COOKIE_CONFIG
-from ratelimit import RateLimiter
 import secrets
 import string
+
+from csrf import COOKIE_CONFIG, validate_csrf
+from database import get_db
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import RedirectResponse
+from models import Store
+from passlib.hash import bcrypt
+from ratelimit import RateLimiter
+from routers.admin_base import (
+    NotAuthenticatedException,
+    NotAuthorizedException,
+    get_authenticated_store,
+    logger,
+    templates,
+)
+from sqlalchemy.orm import Session
+
+from backend.settings import SUPER_RESET_MAX_ATTEMPTS, SUPER_RESET_WINDOW_SECONDS
 
 router = APIRouter()
 reset_limiter = RateLimiter()
@@ -143,7 +151,7 @@ def reset_store_password(
     except (NotAuthenticatedException, NotAuthorizedException):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
 
-    if not reset_limiter.check(f"reset_pw:{store_id}", 3, 3600):
+    if not reset_limiter.check(f"reset_pw:{store_id}", SUPER_RESET_MAX_ATTEMPTS, SUPER_RESET_WINDOW_SECONDS):
         return RedirectResponse(url="/admin/super?err=Demasiados+reseteos+de+contraseña", status_code=429)
 
     target = db.query(Store).filter(Store.id == store_id).first()
@@ -180,9 +188,6 @@ def delete_store(
         return RedirectResponse(url="/admin/super?err=No+podes+eliminarte+a+vos+mismo", status_code=302)
     if target.is_superadmin:
         return RedirectResponse(url="/admin/super?err=No+podes+eliminar+un+superadmin", status_code=302)
-    superadmin_count = db.query(Store).filter(Store.is_superadmin == True).count()
-    if superadmin_count <= 1:
-        return RedirectResponse(url="/admin/super?err=Debe+haber+al+menos+un+superadmin", status_code=302)
     logger.info("Super admin deleted store_id=%s", store_id)
     db.delete(target)
     db.commit()

@@ -6,10 +6,10 @@ formulario HTML. En cada POST valida que el token del formulario coincida
 con el de la cookie.
 """
 
-from fastapi import Request, HTTPException
-import secrets
 import os
+import secrets
 
+from fastapi import HTTPException, Request
 
 # secure=True solo en producción (cuando ENVIRONMENT=production). En local HTTP sin HTTPS, secure=False.
 _csrf_secure = os.getenv("ENVIRONMENT", "development") == "production"

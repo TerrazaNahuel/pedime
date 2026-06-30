@@ -6,9 +6,10 @@ Soporta dos modos:
   - SQLite: fallback local (desarrollo)
 """
 
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-import os
 
 # Usa DATABASE_URL de Railway si existe, sino SQLite local
 DATABASE_URL = os.getenv("DATABASE_URL", "")

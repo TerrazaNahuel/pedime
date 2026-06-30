@@ -4,8 +4,8 @@ Schemas Pydantic para serialización de la API pública del menú.
 Define la estructura JSON que se sirve en /api/menu/{slug}.
 """
 
+
 from pydantic import BaseModel, ConfigDict
-from typing import List
 
 
 class ProductOut(BaseModel):
@@ -28,7 +28,7 @@ class CategoryOut(BaseModel):
 
     id: int
     name: str
-    products: List[ProductOut]
+    products: list[ProductOut]
 
 
 class MenuResponse(BaseModel):
@@ -46,4 +46,4 @@ class MenuResponse(BaseModel):
     logo_url: str = ""
     opening_time: str = ""
     closing_time: str = ""
-    categories: List[CategoryOut]
+    categories: list[CategoryOut]

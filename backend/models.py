@@ -7,10 +7,11 @@ Tres tablas principales:
   - products: productos individuales dentro de una categoría
 """
 
+from datetime import UTC, datetime
+
+from database import Base
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
-from database import Base
-from datetime import datetime, timezone
 
 
 class Store(Base):
@@ -24,7 +25,7 @@ class Store(Base):
     email = Column(String(200), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     whatsapp = Column(String(50), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     delivery_available = Column(Boolean, default=True)
     delivery_price = Column(Numeric(10, 2), default=0.0)
     payment_transfer = Column(Boolean, default=True)

@@ -5,19 +5,27 @@ Incluye rate limiting, validación de password policy, protección CSRF,
 y redacción de emails en logs por privacidad.
 """
 
+import logging
+import re
+import secrets
+
+from csrf import COOKIE_CONFIG, validate_csrf
+from database import get_db
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from database import get_db
 from models import Store
 from passlib.hash import bcrypt
-from csrf import validate_csrf, COOKIE_CONFIG
 from ratelimit import RateLimiter
 from routers.admin_base import templates
-import logging
-import secrets
-import re
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from backend.settings import (
+    LOGIN_MAX_ATTEMPTS,
+    LOGIN_WINDOW_SECONDS,
+    REGISTER_MAX_ATTEMPTS,
+    REGISTER_WINDOW_SECONDS,
+)
 
 router = APIRouter()
 logger = logging.getLogger("pedime.auth")
@@ -65,7 +73,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), c
     """
     validate_csrf(request, csrf_token)
     ip = request.client.host if request.client else "unknown"
-    if not rate_limiter.check(f"login:{ip}", max_attempts=5, window_seconds=60):
+    if not rate_limiter.check(f"login:{ip}", max_attempts=LOGIN_MAX_ATTEMPTS, window_seconds=LOGIN_WINDOW_SECONDS):
         logger.warning("Rate limit excedido para login ip=%s", ip)
         raise HTTPException(status_code=429, detail="Demasiados intentos. Esperá un minuto.")
     store = db.query(Store).filter(Store.email == email).first()
@@ -127,7 +135,7 @@ def register(
         return resp
 
     ip = request.client.host if request.client else "unknown"
-    if not rate_limiter.check(f"register:{ip}", max_attempts=3, window_seconds=300):
+    if not rate_limiter.check(f"register:{ip}", max_attempts=REGISTER_MAX_ATTEMPTS, window_seconds=REGISTER_WINDOW_SECONDS):
         logger.warning("Rate limit excedido para register ip=%s", ip)
         return render_error("Demasiados registros. Esperá 5 minutos.")
 
