@@ -15,14 +15,15 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 if DATABASE_URL:
-    # PostgreSQL en Railway o SQLite en tests
+    # PostgreSQL (Render/Railway) o SQLite en tests
     from sqlalchemy.pool import StaticPool
+    url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1) if DATABASE_URL.startswith("postgresql") else DATABASE_URL
     engine_kwargs = {}
-    if DATABASE_URL.startswith("sqlite"):
+    if url.startswith("sqlite"):
         engine_kwargs["connect_args"] = {"check_same_thread": False}
-        if DATABASE_URL == "sqlite://":
+        if url == "sqlite://":
             engine_kwargs["poolclass"] = StaticPool
-    engine = create_engine(DATABASE_URL, **engine_kwargs)
+    engine = create_engine(url, **engine_kwargs)
 else:
     # SQLite local (desarrollo)
     DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
