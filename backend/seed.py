@@ -30,17 +30,17 @@ def seed_default_store():
 
         logger.info("=" * 50)
         logger.info("STORE SEMILLA CREADA")
-        logger.info("Email: sinculpa@pedime.app")
+        logger.info("Email: nhlterraza@gmail.com")
         logger.info("Contraseña: %s", default_password)
         logger.info("¡CAMBIALA apenas puedas desde el panel de admin!")
         logger.info("=" * 50)
 
         # Store demo (superadmin + premium)
         store = Store(
-            name="SinCulpa.ar",
-            slug="sinculpa",
-            email="sinculpa@pedime.app",
-            whatsapp="5491134567890",
+            name="ElAdmin",
+            slug="eladmin",
+            email="nhlterraza@gmail.com",
+            whatsapp="542473419927",
             password_hash=bcrypt.hash(default_password),
             delivery_available=True,
             delivery_price=Decimal("1000.00"),
