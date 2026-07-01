@@ -24,9 +24,7 @@ def seed_default_store():
         existing = db.query(Store).first()
         if existing:
             return
-        # Genera contraseña aleatoria de 16 caracteres
-        alphabet = string.ascii_letters + string.digits
-        default_password = "".join(secrets.choice(alphabet) for _ in range(16))
+        default_password = "Admin123!"
 
         logger.info("=" * 50)
         logger.info("STORE SEMILLA CREADA")
