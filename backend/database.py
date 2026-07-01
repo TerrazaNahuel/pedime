@@ -48,7 +48,3 @@ def get_db():
     finally:
         db.close()
 
-
-def init_db():
-    """Crea todas las tablas definidas en models.py si no existen."""
-    Base.metadata.create_all(bind=engine)

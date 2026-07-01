@@ -42,15 +42,7 @@ def _super_render(request, admin, db, **extra):
 
 
 def _guard_super(request, db):
-    try:
-        return get_super_admin_store(request, db)
-    except NotAuthenticatedException:
-        raise
-    except NotAuthorizedException:
-        raise
-    except Exception as exc:
-        logger.error("Error inesperado en _guard_super", exc_info=True)
-        raise NotAuthenticatedException() from exc
+    return get_super_admin_store(request, db)
 
 
 @router.get("/admin/super")
@@ -151,7 +143,8 @@ def reset_store_password(
     except (NotAuthenticatedException, NotAuthorizedException):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
 
-    if not reset_limiter.check(f"reset_pw:{store_id}", SUPER_RESET_MAX_ATTEMPTS, SUPER_RESET_WINDOW_SECONDS):
+    admin_ip = request.client.host if request.client else "unknown"
+    if not reset_limiter.check(f"reset_pw:{admin_ip}", SUPER_RESET_MAX_ATTEMPTS, SUPER_RESET_WINDOW_SECONDS):
         return RedirectResponse(url="/admin/super?err=Demasiados+reseteos+de+contraseña", status_code=429)
 
     target = db.query(Store).filter(Store.id == store_id).first()

@@ -11,8 +11,9 @@ from datetime import UTC, datetime
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
-from models import Store
+from models import Category, Product, Store
 from sqlalchemy.orm import Session
+from backend.settings import MAX_CATEGORIES, MAX_PRODUCTS_PER_CATEGORY
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -47,10 +48,8 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
 
 
 def check_plan_limit(store: Store, db: Session, category_id: int | None = None) -> str | None:
-    from backend.settings import MAX_CATEGORIES, MAX_PRODUCTS_PER_CATEGORY
     if store.plan == "premium":
         return None
-    from models import Category, Product
     if category_id is not None:
         prod_count = db.query(Product).filter(
             Product.category_id == category_id,

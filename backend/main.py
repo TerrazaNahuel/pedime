@@ -24,7 +24,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from routers import admin, admin_super, auth, menu_public
-from routers.admin_base import NotAuthenticatedException, templates
+from routers.admin_base import NotAuthenticatedException, NotAuthorizedException, templates
 from seed import seed_default_store
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -103,8 +103,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' https: data:; "
             "object-src 'none'"
         )
@@ -121,6 +121,12 @@ app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 async def not_authenticated_handler(request: Request, exc: NotAuthenticatedException):
     """Redirige a login si el usuario no está autenticado."""
     return RedirectResponse(url="/login", status_code=302)
+
+
+@app.exception_handler(NotAuthorizedException)
+async def not_authorized_handler(request: Request, exc: NotAuthorizedException):
+    """Redirige al dashboard si el usuario no tiene permisos."""
+    return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
 @app.exception_handler(404)
@@ -144,8 +150,17 @@ app.include_router(admin_super.router)
 
 @app.get("/health")
 def health():
-    """Health check para Railway."""
-    return {"status": "ok"}
+    """Health check: verifica DB y estado general."""
+    from sqlalchemy import text
+    from database import SessionLocal
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        return {"status": "ok", "database": "connected"}
+    except Exception as exc:
+        logger.error("Health check falló: %s", exc)
+        return {"status": "error", "database": "disconnected"}, 503
 
 
 @app.get("/", response_class=HTMLResponse)
