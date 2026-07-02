@@ -6,6 +6,7 @@ Provee el dashboard principal y el logout.
 """
 
 import secrets
+from datetime import UTC, datetime, timedelta
 
 from csrf import COOKIE_CONFIG, validate_csrf
 from database import get_db
@@ -41,7 +42,7 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
     store = get_authenticated_store(request, db)
     now = datetime.now(UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_start = today_start - __import__("datetime").timedelta(days=now.weekday())
+    week_start = today_start - timedelta(days=now.weekday())
     month_start = today_start.replace(day=1)
 
     # Page views
