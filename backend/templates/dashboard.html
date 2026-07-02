@@ -503,5 +503,15 @@
             }
         });
     }
+
+    // Preservar scroll al recargar el contenido vía HTMX
+    let savedScrollY = 0;
+    document.addEventListener('htmx:beforeRequest', function(e) {
+        savedScrollY = window.scrollY;
+    });
+    document.addEventListener('htmx:afterSwap', function(e) {
+        window.scrollTo(0, savedScrollY);
+        closeModal('producto-modal');
+    });
 </script>
 {% endblock %}
