@@ -71,7 +71,7 @@
             <a href="/admin/products/export" class="flex-1 text-center bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-2.5 rounded-xl transition text-sm">Exportar CSV</a>
             <label class="flex-1 text-center bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-2.5 rounded-xl transition text-sm cursor-pointer">
                 Importar CSV
-                <form id="import-csv-form" method="POST" action="/admin/products/import" hx-post="/admin/products/import" hx-target="#admin-content" hx-swap="innerHTML" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="hidden">
+                <form id="import-csv-form" hx-post="/admin/products/import" hx-target="#admin-content" hx-swap="innerHTML" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="hidden">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="file" name="file" accept=".csv" id="csv-file-input" onchange="htmx.trigger(this.form, 'submit')">
                 </form>
@@ -80,7 +80,7 @@
 
         {% if products %}
             <!-- Formulario oculto para guardar orden drag & drop -->
-            <form id="reorder-form" method="POST" action="/admin/products/reorder" hx-post="/admin/products/reorder" hx-target="#admin-content" hx-swap="innerHTML" class="hidden">
+            <form id="reorder-form" hx-post="/admin/products/reorder" hx-target="#admin-content" hx-swap="innerHTML" class="hidden">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="product_ids" id="product-order-input" value="">
                 <button id="save-order-btn" type="submit" class="text-sm bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-emerald-500/30 transition mb-3">Guardar orden</button>
@@ -116,7 +116,7 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <!-- Toggle visibilidad -->
-                            <form method="POST" action="/admin/product/{{ prod.id }}/toggle" hx-post="/admin/product/{{ prod.id }}/toggle" hx-target="#admin-content" hx-swap="innerHTML">
+                            <form hx-post="/admin/product/{{ prod.id }}/toggle" hx-target="#admin-content" hx-swap="innerHTML">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1" title="Mostrar/Ocultar">
                                     {% if prod.available %}
@@ -129,12 +129,12 @@
                             <!-- Editar (abre modal) -->
                             <button onclick='editProduct({{ prod.id }}, {{ prod.name|tojson }}, {{ prod.description|tojson }}, {{ prod.price }}, {{ prod.category_id }}, {{ "true" if prod.available else "false" }}, {{ prod.image_url|tojson }}, {{ prod.stock or 0 }})' class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
                             <!-- Duplicar -->
-                            <form method="POST" action="/admin/product/{{ prod.id }}/duplicate" hx-post="/admin/product/{{ prod.id }}/duplicate" hx-target="#admin-content" hx-swap="innerHTML" style="display:inline">
+                            <form hx-post="/admin/product/{{ prod.id }}/duplicate" hx-target="#admin-content" hx-swap="innerHTML" style="display:inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button class="text-sm text-gray-400 hover:text-blue-400 transition px-2 py-1">Duplicar</button>
                             </form>
                             <!-- Eliminar con confirmación -->
-                            <form method="POST" action="/admin/product/{{ prod.id }}/delete" hx-post="/admin/product/{{ prod.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar {{ prod.name|tojson }}?')" style="display:inline">
+                            <form hx-post="/admin/product/{{ prod.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar {{ prod.name|tojson }}?')" style="display:inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
                             </form>
@@ -158,7 +158,7 @@
 
     <!-- ========== TAB: CATEGORÍAS ========== -->
     <div id="panel-categorias" class="space-y-4 {{ 'hidden' if active_tab != 'categorias' else '' }}">
-        <form method="POST" action="/admin/category" hx-post="/admin/category" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex gap-3">
+        <form hx-post="/admin/category" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex gap-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="text" name="name" required placeholder="Nombre de la categoría"
                    class="flex-1 bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
@@ -169,7 +169,7 @@
             {% for cat in categories %}
             <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center justify-between gap-3">
                 <div class="flex-1">
-                    <form id="cat-form-{{ cat.id }}" method="POST" action="/admin/category/{{ cat.id }}/edit" hx-post="/admin/category/{{ cat.id }}/edit" hx-target="#admin-content" hx-swap="innerHTML" class="flex items-center gap-2">
+                    <form id="cat-form-{{ cat.id }}" hx-post="/admin/category/{{ cat.id }}/edit" hx-target="#admin-content" hx-swap="innerHTML" class="flex items-center gap-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <span id="cat-name-{{ cat.id }}" class="font-medium">{{ cat.name }}</span>
                         <input id="cat-input-{{ cat.id }}" type="text" name="name" value="{{ cat.name }}" class="hidden bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500">
@@ -179,7 +179,7 @@
                     <button onclick="editCategory({{ cat.id }})" class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
                     <button onclick="saveCategory({{ cat.id }})" id="cat-save-{{ cat.id }}" class="hidden text-sm text-emerald-400 hover:text-emerald-300 transition px-2 py-1">Guardar</button>
                     <button onclick="cancelCategory({{ cat.id }})" id="cat-cancel-{{ cat.id }}" class="hidden text-sm text-gray-500 hover:text-white transition px-2 py-1">Cancelar</button>
-                    <form method="POST" action="/admin/category/{{ cat.id }}/delete" hx-post="/admin/category/{{ cat.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar ' + {{ cat.name|tojson }} + '?')">
+                    <form hx-post="/admin/category/{{ cat.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar ' + {{ cat.name|tojson }} + '?')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
                     </form>
@@ -197,7 +197,7 @@
 
     <!-- ========== TAB: CONFIGURACIÓN ========== -->
     <div id="panel-config" class="space-y-4 {{ 'hidden' if active_tab != 'config' else '' }}">
-        <form method="POST" action="/admin/settings" hx-post="/admin/settings" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
+        <form hx-post="/admin/settings" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Datos básicos -->
             <div>
@@ -324,7 +324,7 @@
             </button>
         </div>
 
-        <form id="producto-form" method="POST" action="/admin/product" hx-post="/admin/product" hx-target="#admin-content" hx-swap="innerHTML" class="space-y-4">
+        <form id="producto-form" hx-post="/admin/product" hx-target="#admin-content" hx-swap="innerHTML" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="product_id" id="product-id" value="">
 
