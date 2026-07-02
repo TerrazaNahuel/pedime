@@ -73,14 +73,14 @@
 | 53 | Duplicar producto | ✅ |
 | 54 | Importar/exportar productos (CSV) | ✅ |
 | 55 | Previsualización del menú público desde admin | ✅ |
-| 56 | Estadísticas del menú (vistas, clics en WhatsApp) | ⏳ |
-| 57 | Múltiples usuarios por comercio (roles) | ⏳ |
+| 56 | Estadísticas del menú (vistas, clics en WhatsApp) | ✅ |
+| 57 | Múltiples usuarios por comercio (roles) | ❌ eliminado |
 
 ## 🟣 FASE 5 — Pagos y Facturación
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 58 | Integración con Mercado Pago (link de pago) | ⏳ |
+| 58 | Integración con Mercado Pago (endpoints + preferencias) | ⏳ |
 | 59 | QR para transferencia bancaria (CBU/alias) | ⏳ |
 | 60 | Factura electrónica / comprobante simple | ⏳ |
 | 61 | Cobro con tarjeta (Mercado Pago Checkout API) | ⏳ |
@@ -105,7 +105,7 @@
 | 70 | Slug único por comercio (URL amigable) | ✅ |
 | 71 | Seed data inicial (comercio demo + categorías + productos) | ✅ |
 | 72 | Soporte PostgreSQL (Railway) + SQLite (local) intercambiables | ✅ |
-| 73 | Plan gratis / plan premium por comercio | ⏳ |
+| 73 | Plan gratis / plan premium por comercio (upgrade UI, expiración automática) | ✅ |
 | 74 | Subdominio personalizado (micomida.pedime.app) | ⏳ |
 | 75 | Dominio personalizado (menu.micomida.com) | ⏳ |
 

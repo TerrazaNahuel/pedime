@@ -16,7 +16,8 @@ from database import get_db
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from models import Category, Product
-from routers.admin_base import check_plan_limit, get_authenticated_store, logger
+from routers.admin_base import check_plan_limit, get_authenticated_store, logger, render_dashboard_html
+from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
 
 from backend.settings import MAX_FILE_SIZE, MAX_REORDER_IDS
@@ -45,31 +46,40 @@ def create_product(
     """Crea un nuevo producto. Valida longitud, precio, URL de imagen y límites del plan."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
+
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     limit_err = check_plan_limit(store, db, category_id=category_id)
     if limit_err:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(limit_err), status_code=302)
+        return _err(limit_err)
     if len(name) > 100:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El nombre del producto es demasiado largo"), status_code=302)
+        return _err("El nombre del producto es demasiado largo")
     if len(description) > 500:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La descripción es demasiado larga"), status_code=302)
+        return _err("La descripción es demasiado larga")
     if price < 0:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El precio no puede ser negativo"), status_code=302)
+        return _err("El precio no puede ser negativo")
     if stock < 0:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El stock no puede ser negativo"), status_code=302)
+        return _err("El stock no puede ser negativo")
     if not validate_url(image_url):
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La URL de la imagen no es válida"), status_code=302)
+        return _err("La URL de la imagen no es válida")
     if len(image_url) > 500:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La URL de la imagen es demasiado larga"), status_code=302)
+        return _err("La URL de la imagen es demasiado larga")
     if available not in ("0", "1"):
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Valor de disponibilidad inválido"), status_code=302)
+        return _err("Valor de disponibilidad inválido")
     cat = db.query(Category).filter(Category.id == category_id, Category.store_id == store.id).first()
     if not cat:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Categoría no encontrada"), status_code=302)
+        return _err("Categoría no encontrada")
+    min_sort = db.query(db_func.min(Product.sort_order)).filter(Product.store_id == store.id).scalar() or 0
     db.add(Product(name=name, description=description, price=price,
                    image_url=image_url, category_id=category_id, store_id=store.id,
-                   stock=stock, available=(available == "1")))
+                   stock=stock, available=(available == "1"), sort_order=min_sort - 1))
     db.commit()
     logger.info("Producto creado store_id=%s category_id=%s", store.id, category_id)
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Producto creado", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
@@ -87,26 +97,32 @@ def update_product(
     """Edita un producto existente. Verifica que pertenezca al store autenticado."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
+
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     if len(name) > 100:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El nombre del producto es demasiado largo"), status_code=302)
+        return _err("El nombre del producto es demasiado largo")
     if len(description) > 500:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La descripción es demasiado larga"), status_code=302)
+        return _err("La descripción es demasiado larga")
     if price < 0:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El precio no puede ser negativo"), status_code=302)
+        return _err("El precio no puede ser negativo")
     if stock < 0:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El stock no puede ser negativo"), status_code=302)
+        return _err("El stock no puede ser negativo")
     prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not prod:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Producto no encontrado"), status_code=302)
+        return _err("Producto no encontrado")
     if not validate_url(image_url):
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La URL de la imagen no es válida"), status_code=302)
+        return _err("La URL de la imagen no es válida")
     if len(image_url) > 500:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("La URL de la imagen es demasiado larga"), status_code=302)
+        return _err("La URL de la imagen es demasiado larga")
     if available not in ("0", "1"):
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Valor de disponibilidad inválido"), status_code=302)
+        return _err("Valor de disponibilidad inválido")
     cat = db.query(Category).filter(Category.id == category_id, Category.store_id == store.id).first()
     if not cat:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Categoría no encontrada"), status_code=302)
+        return _err("Categoría no encontrada")
     logger.info("Producto editado store_id=%s id=%s", store.id, product_id)
     prod.name = name
     prod.description = description
@@ -116,6 +132,8 @@ def update_product(
     prod.image_url = image_url
     prod.stock = stock
     db.commit()
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Producto actualizado", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
@@ -124,13 +142,20 @@ def duplicate_product(product_id: int, request: Request, csrf_token: str = Form(
     """Duplica un producto agregando '(copia)' al nombre."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
+
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     original = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not original:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Producto no encontrado"), status_code=302)
+        return _err("Producto no encontrado")
     limit_err = check_plan_limit(store, db, category_id=original.category_id)
     if limit_err:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(limit_err), status_code=302)
+        return _err(limit_err)
     dup_name = original.name[:92] + " (copia)"
+    min_sort = db.query(db_func.min(Product.sort_order)).filter(Product.store_id == store.id).scalar() or 0
     dup = Product(
         name=dup_name,
         description=original.description,
@@ -140,11 +165,13 @@ def duplicate_product(product_id: int, request: Request, csrf_token: str = Form(
         available=original.available,
         category_id=original.category_id,
         store_id=store.id,
-        sort_order=original.sort_order,
+        sort_order=min_sort - 1,
     )
     db.add(dup)
     db.commit()
     logger.info("Producto duplicado store_id=%s from_id=%s new_id=%s", store.id, product_id, dup.id)
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Producto duplicado", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
@@ -153,12 +180,20 @@ def delete_product(product_id: int, request: Request, csrf_token: str = Form(...
     """Elimina un producto."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
+
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not prod:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Producto no encontrado"), status_code=302)
+        return _err("Producto no encontrado")
     logger.info("Producto eliminado store_id=%s id=%s", store.id, product_id)
     db.delete(prod)
     db.commit()
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Producto eliminado", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
@@ -167,12 +202,20 @@ def toggle_product(product_id: int, request: Request, csrf_token: str = Form(...
     """Alterna la visibilidad de un producto (available true/false)."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
+
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not prod:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("Producto no encontrado"), status_code=302)
+        return _err("Producto no encontrado")
     prod.available = not prod.available
     db.commit()
     logger.info("Producto toggle store_id=%s id=%s available=%s", store.id, product_id, prod.available)
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Visibilidad actualizada", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
@@ -184,12 +227,18 @@ def reorder_products(request: Request, product_ids: str = Form(...), csrf_token:
     """
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
+
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     try:
         ids = [int(x) for x in product_ids.split(",") if x.strip()]
     except ValueError:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("IDs de producto inválidos"), status_code=302)
+        return _err("IDs de producto inválidos")
     if len(ids) > MAX_REORDER_IDS:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(f"Demasiados productos (máx {MAX_REORDER_IDS})"), status_code=302)
+        return _err(f"Demasiados productos (máx {MAX_REORDER_IDS})")
     products_to_update = db.query(Product).filter(
         Product.id.in_(ids),
         Product.store_id == store.id,
@@ -201,6 +250,8 @@ def reorder_products(request: Request, product_ids: str = Form(...), csrf_token:
             id_to_product[pid].sort_order = i
     db.commit()
     logger.info("Productos reordenados store_id=%s count=%s", store.id, len(ids))
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Orden guardado", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
@@ -238,21 +289,26 @@ def import_products_csv(
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
 
+    def _err(msg):
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, err=msg, tab="productos")
+        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
     if file.filename is None or not file.filename.endswith(".csv"):
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El archivo debe ser CSV"), status_code=302)
+        return _err("El archivo debe ser CSV")
 
     raw = file.file.read(MAX_FILE_SIZE + 1)
     if len(raw) > MAX_FILE_SIZE:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(f"El archivo es demasiado grande (máx {MAX_FILE_SIZE // (1024*1024)} MB)"), status_code=302)
+        return _err(f"El archivo es demasiado grande (máx {MAX_FILE_SIZE // (1024*1024)} MB)")
 
     content_type = file.content_type or ""
     if content_type not in ("text/csv", "text/plain", "application/octet-stream", ""):
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El archivo debe ser un CSV válido"), status_code=302)
+        return _err("El archivo debe ser un CSV válido")
 
     try:
         content = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
-        return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote("El archivo debe estar codificado en UTF-8"), status_code=302)
+        return _err("El archivo debe estar codificado en UTF-8")
     reader = csv.DictReader(io.StringIO(content))
 
     created = 0
@@ -317,4 +373,6 @@ def import_products_csv(
     if errors:
         msg += " Errores: " + "; ".join(errors[:5])
 
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg=msg, tab="productos")
     return RedirectResponse(url=f"/admin/dashboard?msg={urllib.parse.quote(msg)}", status_code=302)

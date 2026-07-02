@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from models import Category, Product, Store
 from passlib.hash import bcrypt
 from ratelimit import RateLimiter
-from routers.admin_base import get_authenticated_store, logger, templates
+from routers.admin_base import get_authenticated_store, logger, render_dashboard_html, templates
 from sqlalchemy.orm import Session
 
 from backend.settings import PASSWORD_CHANGE_MAX_ATTEMPTS, PASSWORD_CHANGE_WINDOW_SECONDS
@@ -26,7 +26,7 @@ rate_limiter = RateLimiter()
 
 
 @router.post("/admin/settings")
-def update_settings(
+def     update_settings(
     request: Request,
     name: str = Form(...),
     whatsapp: str = Form(...),
@@ -58,6 +58,8 @@ def update_settings(
 
     def render_with(msg=None, err=None):
         """Helper: renderiza el dashboard con mensaje flash y nuevo CSRF."""
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, msg=msg or "", err=err or "", tab="config")
         token = secrets.token_hex(32)
         resp = templates.TemplateResponse(request, "dashboard.html", {
             "store": store,

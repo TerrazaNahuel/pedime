@@ -5,7 +5,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" crossorigin="anonymous"></script>
 {% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto p-4">
+<div id="admin-content" class="max-w-4xl mx-auto p-4">
     <!-- Header del dashboard con nombre del store y logout -->
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -43,15 +43,26 @@
         <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">{{ error }}</div>
     {% endif %}
 
+    {% if store.plan == 'free' %}
+    <div class="bg-gradient-to-r from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-purple-300">✨ Upgrade a Premium</p>
+            <p class="text-xs text-gray-500">Sin límites: productos ilimitados, más categorías, y estadísticas detalladas.</p>
+        </div>
+        <a href="/admin/stats#premium" class="text-sm bg-purple-500 hover:bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg transition shrink-0">Ver planes</a>
+    </div>
+    {% endif %}
+
     <!-- Tabs de navegación: Productos / Categorías / Configuración -->
     <div class="flex gap-1 bg-[#1a1a1a] rounded-xl p-1 mb-6">
-        <button onclick="switchTab('productos')" id="tab-productos" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition bg-emerald-500 text-white">Productos</button>
-        <button onclick="switchTab('categorias')" id="tab-categorias" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition text-gray-400 hover:text-white">Categorías</button>
-        <button onclick="switchTab('config')" id="tab-config" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition text-gray-400 hover:text-white">Configuración</button>
+        <button onclick="switchTab('productos')" id="tab-productos" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'productos' else 'text-gray-400 hover:text-white' }}">Productos</button>
+        <button onclick="switchTab('categorias')" id="tab-categorias" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'categorias' else 'text-gray-400 hover:text-white' }}">Categorías</button>
+        <button onclick="switchTab('config')" id="tab-config" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'config' else 'text-gray-400 hover:text-white' }}">Configuración</button>
+        <a href="/admin/stats" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition text-center text-gray-400 hover:text-white hover:bg-white/5">📊 Stats</a>
     </div>
 
     <!-- ========== TAB: PRODUCTOS ========== -->
-    <div id="panel-productos" class="space-y-4">
+    <div id="panel-productos" class="space-y-4 {{ 'hidden' if active_tab != 'productos' else '' }}">
         <button onclick="openModal('producto-modal')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition">
             + Nuevo producto
         </button>
@@ -60,63 +71,79 @@
             <a href="/admin/products/export" class="flex-1 text-center bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-2.5 rounded-xl transition text-sm">Exportar CSV</a>
             <label class="flex-1 text-center bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-2.5 rounded-xl transition text-sm cursor-pointer">
                 Importar CSV
-                <form id="import-csv-form" method="POST" action="/admin/products/import" enctype="multipart/form-data" class="hidden">
+                <form id="import-csv-form" method="POST" action="/admin/products/import" hx-post="/admin/products/import" hx-target="#admin-content" hx-swap="innerHTML" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="hidden">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="file" name="file" accept=".csv" id="csv-file-input" onchange="document.getElementById('import-csv-form').submit()">
+                    <input type="file" name="file" accept=".csv" id="csv-file-input" onchange="htmx.trigger(this.form, 'submit')">
                 </form>
             </label>
         </div>
 
         {% if products %}
             <!-- Formulario oculto para guardar orden drag & drop -->
-            <form id="reorder-form" method="POST" action="/admin/products/reorder" class="hidden">
+            <form id="reorder-form" method="POST" action="/admin/products/reorder" hx-post="/admin/products/reorder" hx-target="#admin-content" hx-swap="innerHTML" class="hidden">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="product_ids" id="product-order-input" value="">
                 <button id="save-order-btn" type="submit" class="text-sm bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-emerald-500/30 transition mb-3">Guardar orden</button>
             </form>
-            <!-- Lista de productos (sortable via SortableJS) -->
+            <!-- Lista de productos agrupados por categoría (colapsables) -->
             <div id="product-list">
-            {% for prod in products %}
-            <div class="product-sort bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center gap-4 cursor-grab active:cursor-grabbing" data-id="{{ prod.id }}">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <h3 class="font-semibold">{{ prod.name }}</h3>
-                        {% if not prod.available %}
-                            <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Oculto</span>
-                        {% endif %}
-                    </div>
-                    <p class="text-sm text-gray-500">{{ prod.description or "—" }}</p>
-                    <div class="flex items-center gap-3 mt-1 text-sm">
-                        <span class="text-emerald-400 font-bold">${{ "%.2f"|format(prod.price) }}</span>
-                        <span class="text-gray-500">{{ prod.category.name }}</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <!-- Toggle visibilidad -->
-                    <form method="POST" action="/admin/product/{{ prod.id }}/toggle">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1" title="Mostrar/Ocultar">
-                            {% if prod.available %}
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            {% else %}
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                            {% endif %}
+            {% for cat in categories %}
+                {% set cat_prods = category_products.get(cat.id, []) %}
+                {% if cat_prods %}
+                <div class="product-category-group mb-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button onclick="toggleCategory({{ cat.id }})" class="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition">
+                            <span id="cat-arrow-{{ cat.id }}" class="transition-transform duration-200">▼</span>
+                            <span>{{ cat.name }}</span>
+                            <span class="text-xs text-gray-600 font-normal">({{ cat_prods|length }})</span>
                         </button>
-                    </form>
-                    <!-- Editar (abre modal) -->
-                    <button onclick='editProduct({{ prod.id }}, {{ prod.name|tojson }}, {{ prod.description|tojson }}, {{ prod.price }}, {{ prod.category_id }}, {{ "true" if prod.available else "false" }}, {{ prod.image_url|tojson }}, {{ prod.stock or 0 }})' class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
-                    <!-- Duplicar -->
-                    <form method="POST" action="/admin/product/{{ prod.id }}/duplicate" style="display:inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button class="text-sm text-gray-400 hover:text-blue-400 transition px-2 py-1">Duplicar</button>
-                    </form>
-                    <!-- Eliminar con confirmación -->
-                    <form method="POST" action="/admin/product/{{ prod.id }}/delete" onsubmit="return confirm('¿Eliminar {{ prod.name|tojson }}?')" style="display:inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
-                    </form>
+                    </div>
+                    <div id="cat-group-{{ cat.id }}">
+                    {% for prod in cat_prods %}
+                    <div class="product-sort bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center gap-4 cursor-grab active:cursor-grabbing" data-id="{{ prod.id }}">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-semibold">{{ prod.name }}</h3>
+                                {% if not prod.available %}
+                                    <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Oculto</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-gray-500">{{ prod.description or "—" }}</p>
+                            <div class="flex items-center gap-3 mt-1 text-sm">
+                                <span class="text-emerald-400 font-bold">${{ "%.2f"|format(prod.price) }}</span>
+                                <span class="text-gray-500">{{ cat.name }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <!-- Toggle visibilidad -->
+                            <form method="POST" action="/admin/product/{{ prod.id }}/toggle" hx-post="/admin/product/{{ prod.id }}/toggle" hx-target="#admin-content" hx-swap="innerHTML">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1" title="Mostrar/Ocultar">
+                                    {% if prod.available %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    {% else %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <!-- Editar (abre modal) -->
+                            <button onclick='editProduct({{ prod.id }}, {{ prod.name|tojson }}, {{ prod.description|tojson }}, {{ prod.price }}, {{ prod.category_id }}, {{ "true" if prod.available else "false" }}, {{ prod.image_url|tojson }}, {{ prod.stock or 0 }})' class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
+                            <!-- Duplicar -->
+                            <form method="POST" action="/admin/product/{{ prod.id }}/duplicate" hx-post="/admin/product/{{ prod.id }}/duplicate" hx-target="#admin-content" hx-swap="innerHTML" style="display:inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="text-sm text-gray-400 hover:text-blue-400 transition px-2 py-1">Duplicar</button>
+                            </form>
+                            <!-- Eliminar con confirmación -->
+                            <form method="POST" action="/admin/product/{{ prod.id }}/delete" hx-post="/admin/product/{{ prod.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar {{ prod.name|tojson }}?')" style="display:inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    </div>
                 </div>
-            </div>
+                {% endif %}
             {% endfor %}
             </div>
         {% else %}
@@ -130,8 +157,8 @@
     </div>
 
     <!-- ========== TAB: CATEGORÍAS ========== -->
-    <div id="panel-categorias" class="hidden space-y-4">
-        <form method="POST" action="/admin/category" class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex gap-3">
+    <div id="panel-categorias" class="space-y-4 {{ 'hidden' if active_tab != 'categorias' else '' }}">
+        <form method="POST" action="/admin/category" hx-post="/admin/category" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex gap-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="text" name="name" required placeholder="Nombre de la categoría"
                    class="flex-1 bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
@@ -142,7 +169,7 @@
             {% for cat in categories %}
             <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center justify-between gap-3">
                 <div class="flex-1">
-                    <form id="cat-form-{{ cat.id }}" method="POST" action="/admin/category/{{ cat.id }}/edit" class="flex items-center gap-2">
+                    <form id="cat-form-{{ cat.id }}" method="POST" action="/admin/category/{{ cat.id }}/edit" hx-post="/admin/category/{{ cat.id }}/edit" hx-target="#admin-content" hx-swap="innerHTML" class="flex items-center gap-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <span id="cat-name-{{ cat.id }}" class="font-medium">{{ cat.name }}</span>
                         <input id="cat-input-{{ cat.id }}" type="text" name="name" value="{{ cat.name }}" class="hidden bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500">
@@ -152,7 +179,7 @@
                     <button onclick="editCategory({{ cat.id }})" class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
                     <button onclick="saveCategory({{ cat.id }})" id="cat-save-{{ cat.id }}" class="hidden text-sm text-emerald-400 hover:text-emerald-300 transition px-2 py-1">Guardar</button>
                     <button onclick="cancelCategory({{ cat.id }})" id="cat-cancel-{{ cat.id }}" class="hidden text-sm text-gray-500 hover:text-white transition px-2 py-1">Cancelar</button>
-                    <form method="POST" action="/admin/category/{{ cat.id }}/delete" onsubmit="return confirm('¿Eliminar ' + {{ cat.name|tojson }} + '?')">
+                    <form method="POST" action="/admin/category/{{ cat.id }}/delete" hx-post="/admin/category/{{ cat.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar ' + {{ cat.name|tojson }} + '?')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
                     </form>
@@ -169,8 +196,8 @@
     </div>
 
     <!-- ========== TAB: CONFIGURACIÓN ========== -->
-    <div id="panel-config" class="hidden">
-        <form method="POST" action="/admin/settings" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
+    <div id="panel-config" class="space-y-4 {{ 'hidden' if active_tab != 'config' else '' }}">
+        <form method="POST" action="/admin/settings" hx-post="/admin/settings" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Datos básicos -->
             <div>
@@ -297,7 +324,7 @@
             </button>
         </div>
 
-        <form id="producto-form" method="POST" action="/admin/product" class="space-y-4">
+        <form id="producto-form" method="POST" action="/admin/product" hx-post="/admin/product" hx-target="#admin-content" hx-swap="innerHTML" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="product_id" id="product-id" value="">
 
@@ -394,7 +421,9 @@
         document.getElementById('product-available').checked = available;
         document.getElementById('product-image').value = imageUrl || '';
         document.getElementById('product-stock').value = stock || 0;
-        document.getElementById('producto-form').action = '/admin/product/' + id + '/edit';
+        const form = document.getElementById('producto-form');
+        form.action = '/admin/product/' + id + '/edit';
+        form.setAttribute('hx-post', '/admin/product/' + id + '/edit');
         openModal('producto-modal');
     }
 
@@ -407,7 +436,9 @@
         document.getElementById('product-price').value = '';
         document.getElementById('product-image').value = '';
         document.getElementById('product-available').checked = true;
-        document.getElementById('producto-form').action = '/admin/product';
+        const form = document.getElementById('producto-form');
+        form.action = '/admin/product';
+        form.setAttribute('hx-post', '/admin/product');
     }
 
     // Cerrar modal al hacer clic fuera
@@ -448,6 +479,16 @@
             if (e.key === 'Escape') { cancelCategory(parseInt(this.id.replace('cat-input-', ''))); }
         });
     });
+
+    // Toggle colapsable de categorías
+    function toggleCategory(id) {
+        const group = document.getElementById('cat-group-' + id);
+        const arrow = document.getElementById('cat-arrow-' + id);
+        if (!group) return;
+        const isHidden = group.style.display === 'none';
+        group.style.display = isHidden ? '' : 'none';
+        arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+    }
 
     // SortableJS: drag & drop para reordenar productos
     const productList = document.getElementById('product-list');

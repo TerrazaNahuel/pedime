@@ -96,6 +96,8 @@ async function fetchMenu() {
             }
         }
         renderMenu();
+        // Tracking de visita (fire-and-forget)
+        navigator.sendBeacon(`${API_BASE}/api/track/view/${currentSlug}`, "");
     } catch { showError(); }
 }
 
@@ -653,6 +655,12 @@ whatsappBtn.onclick = () => {
     msg += "Subtotal: $" + subtotal.toLocaleString("es-AR") + "\n";
     if (deliveryCost > 0) msg += "Envío: $" + deliveryCost.toLocaleString("es-AR") + "\n";
     msg += "Total: $" + total.toLocaleString("es-AR");
+
+    // Tracking de clic en WhatsApp (fire-and-forget)
+    try {
+        navigator.sendBeacon(`${API_BASE}/api/track/whatsapp-click/${currentSlug}`,
+            JSON.stringify({ cart_value: total, item_count: getCartCount(), payment_method: payLabel }));
+    } catch {}
 
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), "_blank");
     cart = {};

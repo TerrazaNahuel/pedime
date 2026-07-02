@@ -39,11 +39,11 @@ Abrir [http://localhost:8000](http://localhost:8000).
 ## Seed Data
 
 Al primer inicio se crea automáticamente un comercio demo:
-- **Nombre:** SinCulpa.ar
-- **Email:** sinculpa@pedime.app
-- **Slug:** sinculpa
-- **URL:** [http://localhost:8000/menu/sinculpa](http://localhost:8000/menu/sinculpa)
-- **Contraseña:** se genera aleatoriamente y se loguea en la consola al iniciar el servidor.
+- **Nombre:** ElAdmin
+- **Email:** nhlterraza@gmail.com
+- **Slug:** eladmin
+- **URL:** [http://localhost:8000/menu/eladmin](http://localhost:8000/menu/eladmin)
+- **Contraseña:** `Admin123!` (¡cambiarla al entrar!)
 
 ## Tests
 
@@ -52,13 +52,14 @@ cd backend
 python -m pytest tests/ -v
 ```
 
-### 44 tests distribuidos en 3 archivos:
+### 56 tests distribuidos en 4 archivos:
 
 | Archivo | Tests | Cobertura |
 |---------|-------|-----------|
 | `tests/test_menu.py` | 6 | Rutas públicas del menú, API JSON, páginas de login/register |
 | `tests/test_security.py` | 19 | Password policy, CSRF, rate limiting, SQLi, XSS, validaciones, headers de seguridad |
 | `tests/test_admin.py` | 19 | CRUD productos/categorías/settings, import/export CSV, logout |
+| `tests/test_super.py` | 12 | Super admin: toggle active, set plan, reset password, delete stores |
 
 ## Estructura del Proyecto
 
@@ -107,6 +108,9 @@ pedime/
 
 ### Admin
 - Dashboard con tabs (Productos / Categorías / Configuración)
+- Tabs persistentes (no se resetean al crear categorías)
+- Categorías colapsables en la vista de productos
+- Navegación sin recargas de página (HTMX)
 - CRUD de productos (crear, editar, eliminar, ocultar)
 - CRUD de categorías (crear, editar, eliminar)
 - Drag & drop para ordenar productos

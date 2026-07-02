@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from routers import admin, admin_super, auth, menu_public
+from routers import admin, admin_super, auth, menu_public, payments, tracking
 from routers.admin_base import NotAuthenticatedException, NotAuthorizedException, templates
 from seed import seed_default_store
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -146,6 +146,8 @@ app.include_router(menu_public.router)
 app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(admin_super.router)
+app.include_router(tracking.router)
+app.include_router(payments.router)
 
 
 @app.get("/health")

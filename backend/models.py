@@ -10,7 +10,7 @@ Tres tablas principales:
 from datetime import UTC, datetime
 
 from database import Base
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 
@@ -74,3 +74,44 @@ class Product(Base):
 
     category = relationship("Category", back_populates="products")
     store = relationship("Store", back_populates="products")
+
+
+class PageView(Base):
+    """Visita a la página de menú de un comercio."""
+
+    __tablename__ = "page_views"
+
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
+    viewed_at = Column(DateTime, default=lambda: datetime.now(UTC))
+
+
+class WhatsAppClick(Base):
+    """Click en el botón de WhatsApp para enviar un pedido."""
+
+    __tablename__ = "whatsapp_clicks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
+    clicked_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    cart_value = Column(Numeric(10, 2), default=0)
+    item_count = Column(Integer, default=0)
+    payment_method = Column(String(20), default="")
+
+
+class PaymentTransaction(Base):
+    """Transacción de pago para upgrade a premium."""
+
+    __tablename__ = "payment_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
+    mp_preference_id = Column(String(100), unique=True, nullable=True)
+    mp_payment_id = Column(String(100), unique=True, nullable=True)
+    status = Column(String(20), default="pending")  # pending | approved | rejected | refunded
+    amount = Column(Numeric(10, 2), nullable=False)
+    plan_type = Column(String(20), default="premium")
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    approved_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    metadata_json = Column(Text, default="")

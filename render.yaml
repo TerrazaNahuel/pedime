@@ -13,6 +13,14 @@ services:
         fromDatabase:
           name: pedime-db
           property: connectionString
+      - key: SITE_URL
+        value: https://pedime.onrender.com
+      - key: PREMIUM_PRICE_MONTHLY
+        value: "12000"
+      - key: PREMIUM_PRICE_YEARLY
+        value: "90000"
+      - key: PREMIUM_DURATION_DAYS
+        value: "30"
 
 databases:
   - name: pedime-db
