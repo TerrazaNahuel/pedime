@@ -490,20 +490,6 @@
         arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
     }
 
-    // SortableJS: drag & drop para reordenar productos
-    const productList = document.getElementById('product-list');
-    if (productList) {
-        new Sortable(productList, {
-            animation: 200,
-            handle: '.product-sort',
-            onEnd: function() {
-                const ids = Array.from(productList.querySelectorAll('.product-sort')).map(el => el.dataset.id);
-                document.getElementById('product-order-input').value = ids.join(',');
-                document.getElementById('save-order-btn').closest('form').classList.remove('hidden');
-            }
-        });
-    }
-
     // Preservar scroll al recargar el contenido vía HTMX
     let savedScrollY = 0;
     document.addEventListener('htmx:beforeRequest', function(e) {
@@ -513,5 +499,23 @@
         window.scrollTo(0, savedScrollY);
         closeModal('producto-modal');
     });
+
+    // SortableJS: drag & drop para reordenar productos
+    try {
+        const productList = document.getElementById('product-list');
+        if (productList) {
+            new Sortable(productList, {
+                animation: 200,
+                handle: '.product-sort',
+                onEnd: function() {
+                    const ids = Array.from(productList.querySelectorAll('.product-sort')).map(el => el.dataset.id);
+                    document.getElementById('product-order-input').value = ids.join(',');
+                    document.getElementById('save-order-btn').closest('form').classList.remove('hidden');
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("SortableJS no disponible, drag & drop desactivado:", e);
+    }
 </script>
 {% endblock %}

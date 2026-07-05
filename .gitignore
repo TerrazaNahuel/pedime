@@ -27,5 +27,8 @@ Thumbs.db
 
 
 
+# Logs
+*.log
+
 # Project specific
 backend/data/
