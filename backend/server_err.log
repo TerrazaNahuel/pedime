@@ -1,9 +1,0 @@
-INFO:     Will watch for changes in these directories: ['C:\\Users\\Nahu\\Desktop\\Trabajo\\pedime']
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [4760] using StatReload
-2026-07-05 18:02:09 [WARNING] pedime: SECRET_KEY no configurada en .env. Se generó una temporal.
-INFO:     Started server process [13012]
-INFO:     Waiting for application startup.
-2026-07-05 18:02:09 [INFO] pedime: === LIFESPAN START ===
-2026-07-05 18:02:09 [INFO] pedime: DATABASE_URL set: no
-2026-07-05 18:02:09 [INFO] pedime: PORT: not set
