@@ -23,6 +23,7 @@ let selectedPayment = null;
 let deliveryAddress = "";
 let deliveryReference = "";
 let orderComment = "";
+let expandedCategories = new Set();
 
 function saveCartState() {
     try {
@@ -164,23 +165,52 @@ function renderMenu() {
     const pillsContainer = document.getElementById("category-pills");
     pillsContainer.innerHTML = "";
 
-    storeData.categories.forEach((cat, idx) => {
+    storeData.categories.forEach((cat) => {
         if (!cat.products.length) return;
         const sectionId = "cat-" + cat.id;
+        const isExpanded = expandedCategories.has(cat.id);
+
         const section = document.createElement("div");
-        section.className = "space-y-3";
+        section.className = "space-y-2";
         section.id = sectionId;
 
-        const title = document.createElement("h2");
-        title.className = "text-sm font-semibold text-gray-400 uppercase tracking-wider px-1";
-        title.textContent = cat.name;
-        section.appendChild(title);
+        // Header clickeable para toggle
+        const header = document.createElement("div");
+        header.className = "flex items-center justify-between cursor-pointer select-none py-1";
+        header.onclick = () => toggleCategory(cat.id);
 
-        // Píldora para scrollear a esta categoría
+        const title = document.createElement("h2");
+        title.className = "text-sm font-semibold text-gray-400 uppercase tracking-wider";
+        title.textContent = cat.name;
+        header.appendChild(title);
+
+        const headerRight = document.createElement("div");
+        headerRight.className = "flex items-center gap-2";
+
+        const count = document.createElement("span");
+        count.className = "text-xs text-gray-600";
+        count.textContent = cat.products.length + " productos";
+        headerRight.appendChild(count);
+
+        const chevron = document.createElement("span");
+        chevron.className = "chevron text-gray-500 transition-transform duration-200 " + (isExpanded ? "rotate-180" : "");
+        chevron.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`;
+        headerRight.appendChild(chevron);
+
+        header.appendChild(headerRight);
+        section.appendChild(header);
+
+        // Contenedor de productos (colapsable)
+        const productsWrapper = document.createElement("div");
+        productsWrapper.className = "products-wrapper space-y-3" + (isExpanded ? "" : " hidden");
+        productsWrapper.id = "products-" + cat.id;
+
+        // Píldora para scrollear y expandir esta categoría
         const pill = document.createElement("button");
         pill.className = "shrink-0 px-3 py-1.5 rounded-full text-sm font-medium bg-[#1a1a1a] text-gray-400 hover:text-white hover:bg-white/10 transition border border-white/5";
         pill.textContent = cat.name;
         pill.onclick = () => {
+            if (!expandedCategories.has(cat.id)) toggleCategory(cat.id);
             document.getElementById(sectionId).scrollIntoView({ behavior: "smooth", block: "start" });
         };
         pillsContainer.appendChild(pill);
@@ -189,6 +219,7 @@ function renderMenu() {
         cat.products.forEach((prod) => {
             const card = document.createElement("div");
             card.className = "product-card flex items-center justify-between bg-[#1a1a1a] rounded-xl p-4 border border-white/5 gap-3";
+            card.dataset.id = prod.id;
             card.setAttribute("data-name", prod.name.toLowerCase());
 
             if (prod.image_url) {
@@ -254,8 +285,9 @@ function renderMenu() {
                 badge.textContent = "No disponible ahora";
                 card.appendChild(badge);
             }
-            section.appendChild(card);
+            productsWrapper.appendChild(card);
         });
+        section.appendChild(productsWrapper);
         container.appendChild(section);
     });
 
@@ -265,6 +297,21 @@ function renderMenu() {
     updateCartUI();
 }
 
+/** Expande o colapsa una categoría por su ID. */
+function toggleCategory(catId) {
+    const wrapper = document.getElementById("products-" + catId);
+    const chevron = document.querySelector("#cat-" + catId + " .chevron");
+    if (!wrapper) return;
+    const isHidden = wrapper.classList.contains("hidden");
+    wrapper.classList.toggle("hidden");
+    if (chevron) chevron.classList.toggle("rotate-180");
+    if (isHidden) {
+        expandedCategories.add(catId);
+    } else {
+        expandedCategories.delete(catId);
+    }
+}
+
 // Filtro de búsqueda en tiempo real
 document.getElementById("search-input").addEventListener("input", function() {
     const q = this.value.toLowerCase().trim();
@@ -272,13 +319,51 @@ document.getElementById("search-input").addEventListener("input", function() {
         const name = card.getAttribute("data-name") || "";
         card.style.display = (!q || name.includes(q)) ? "" : "none";
     });
-    // Oculta secciones de categoría sin productos visibles durante la búsqueda
+    // Oculta/muestra secciones de categoría y auto-expande durante la búsqueda
     document.querySelectorAll("#menu-content > div[id^='cat-']").forEach(section => {
         const visibleCards = section.querySelectorAll('.product-card[style*="display: none"]');
         const allCards = section.querySelectorAll(".product-card");
         section.style.display = (allCards.length === visibleCards.length && q) ? "none" : "";
+        if (q && allCards.length > visibleCards.length) {
+            const wrapper = section.querySelector(".products-wrapper");
+            const chevron = section.querySelector(".chevron");
+            if (wrapper && wrapper.classList.contains("hidden")) {
+                wrapper.classList.remove("hidden");
+                if (chevron) chevron.classList.add("rotate-180");
+            }
+        }
     });
 });
+
+/** Actualiza los controles de cantidad de un producto en el DOM sin re-renderizar todo. */
+function updateProductQtyInDOM(id) {
+    const card = document.querySelector(`.product-card[data-id="${id}"]`);
+    if (!card) { renderMenu(); return; }
+    const oldQtyDiv = card.querySelector(".qty-controls");
+    if (oldQtyDiv) oldQtyDiv.remove();
+    if (!isStoreOpen()) return;
+    const qtyDiv = document.createElement("div");
+    qtyDiv.className = "qty-controls flex items-center gap-2";
+    if (cart[id]) {
+        const minus = document.createElement("button");
+        minus.className = "w-8 h-8 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition text-lg flex items-center justify-center";
+        minus.textContent = "\u2212";
+        minus.onclick = () => removeFromCart(id);
+        qtyDiv.appendChild(minus);
+        const count = document.createElement("span");
+        count.className = "text-white font-bold w-6 text-center";
+        count.textContent = cart[id].qty;
+        qtyDiv.appendChild(count);
+    }
+    const addBtn = document.createElement("button");
+    addBtn.className = "w-8 h-8 rounded-full bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition text-lg flex items-center justify-center";
+    addBtn.textContent = "+";
+    const prod = storeData.categories.flatMap(c => c.products).find(p => p.id === id);
+    addBtn.onclick = () => addToCart(id, prod ? prod.name : "Producto", prod ? prod.price : 0);
+    qtyDiv.appendChild(addBtn);
+    card.appendChild(qtyDiv);
+    updateCartUI();
+}
 
 /** Agrega un producto al carrito. */
 function addToCart(id, name, price) {
@@ -286,7 +371,7 @@ function addToCart(id, name, price) {
     if (!cart[id]) cart[id] = { qty: 0, name, price };
     cart[id].qty++;
     saveCartState();
-    renderMenu();
+    updateProductQtyInDOM(id);
     showToast(name);
 }
 
@@ -297,7 +382,7 @@ function removeFromCart(id) {
         if (cart[id].qty <= 0) delete cart[id];
     }
     saveCartState();
-    renderMenu();
+    updateProductQtyInDOM(id);
 }
 
 /** Muestra un toast animado indicando que se agregó un producto. */

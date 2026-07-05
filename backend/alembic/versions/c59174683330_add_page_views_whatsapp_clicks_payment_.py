@@ -61,10 +61,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_whatsapp_clicks_id'), 'whatsapp_clicks', ['id'], unique=False)
     op.create_index(op.f('ix_whatsapp_clicks_store_id'), 'whatsapp_clicks', ['store_id'], unique=False)
     op.drop_index('ix_categories_store_id', table_name='categories')
-    op.alter_column('products', 'stock',
-               existing_type=sa.INTEGER(),
-               nullable=True,
-               existing_server_default=sa.text("'0'"))
     op.drop_index('ix_products_category_id', table_name='products')
     op.drop_index('ix_products_store_id', table_name='products')
     # ### end Alembic commands ###
