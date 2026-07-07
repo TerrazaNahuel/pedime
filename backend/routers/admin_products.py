@@ -37,13 +37,13 @@ def create_product(
     request: Request,
     name: str = Form(...), description: str = Form(""),
     price: Decimal = Form(...), category_id: int = Form(...),
-    image_url: str = Form(""),
+    image_url: str = Form(""), product_id: int = Form(0),
     stock: int = Form(0),
     available: str = Form("1"),
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """Crea un nuevo producto. Valida longitud, precio, URL de imagen y límites del plan."""
+    """Crea o edita un producto segun si product_id está presente."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
 
@@ -51,6 +51,43 @@ def create_product(
         if request.headers.get("HX-Request"):
             return render_dashboard_html(request, store, db, err=msg, tab="productos")
         return RedirectResponse(url="/admin/dashboard?err=" + urllib.parse.quote(msg), status_code=302)
+
+    if product_id > 0:
+        prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
+        if not prod:
+            return _err("Producto no encontrado")
+        limit_err = check_plan_limit(store, db, category_id=category_id)
+        if limit_err:
+            return _err(limit_err)
+        if len(name) > 100:
+            return _err("El nombre del producto es demasiado largo")
+        if len(description) > 500:
+            return _err("La descripción es demasiado larga")
+        if price < 0:
+            return _err("El precio no puede ser negativo")
+        if stock < 0:
+            return _err("El stock no puede ser negativo")
+        if not validate_url(image_url):
+            return _err("La URL de la imagen no es válida")
+        if len(image_url) > 500:
+            return _err("La URL de la imagen es demasiado larga")
+        if available not in ("0", "1"):
+            return _err("Valor de disponibilidad inválido")
+        cat = db.query(Category).filter(Category.id == category_id, Category.store_id == store.id).first()
+        if not cat:
+            return _err("Categoría no encontrada")
+        prod.name = name
+        prod.description = description
+        prod.price = price
+        prod.category_id = category_id
+        prod.available = (available == "1")
+        prod.image_url = image_url
+        prod.stock = stock
+        db.commit()
+        logger.info("Producto editado store_id=%s id=%s", store.id, product_id)
+        if request.headers.get("HX-Request"):
+            return render_dashboard_html(request, store, db, msg="Producto actualizado", tab="productos")
+        return RedirectResponse(url="/admin/dashboard", status_code=302)
 
     limit_err = check_plan_limit(store, db, category_id=category_id)
     if limit_err:

@@ -422,9 +422,6 @@
         document.getElementById('product-available').checked = available;
         document.getElementById('product-image').value = imageUrl || '';
         document.getElementById('product-stock').value = stock || 0;
-        const form = document.getElementById('producto-form');
-        form.action = '/admin/product/' + id + '/edit';
-        form.setAttribute('hx-post', '/admin/product/' + id + '/edit');
         openModal('producto-modal');
     }
 
@@ -437,9 +434,6 @@
         document.getElementById('product-price').value = '';
         document.getElementById('product-image').value = '';
         document.getElementById('product-available').checked = true;
-        const form = document.getElementById('producto-form');
-        form.action = '/admin/product';
-        form.setAttribute('hx-post', '/admin/product');
     }
 
     // Cerrar modal al hacer clic fuera
