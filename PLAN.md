@@ -1,10 +1,11 @@
-# PediMé — Plan de Desarrollo
+# PediMe — Plan de Desarrollo
 
-> MVP de menú digital con pedidos por WhatsApp
+> Plataforma SaaS de menú / catálogo digital con pedidos por WhatsApp.
+> Desarrollo por Nahuel Axel Terraza — 2026.
 
 ---
 
-## 🔴 FASE 1 — Corregir Deuda Técnica
+## FASE 1 — Fundación y Deuda Técnica ✅
 
 | # | Feature | Estado |
 |---|---------|--------|
@@ -18,150 +19,168 @@
 | 8 | Rate limiter (login 5/min, register 3/5min) | ✅ |
 | 9 | Password policy (8+ chars, mayúscula, minúscula, dígito) | ✅ |
 | 10 | Session security (session.clear() en login/register, https_only) | ✅ |
-| 11 | Security headers (X-Frame-Options, X-Content-Type-Options) | ✅ |
+| 11 | Security headers (X-Frame-Options, X-Content-Type-Options, HSTS, Referrer-Policy, CSP) | ✅ |
 | 12 | Email redactado en logs | ✅ |
 | 13 | Migración SQL Server → SQLite | ✅ |
 | 14 | Modo solo lectura en horario cerrado | ✅ |
-| 15 | Config deploy Railway (Procfile, runtime.txt, railway.json, requirements.txt raíz) | ✅ |
+| 15 | Config deploy Railway (Procfile, runtime.txt, railway.json, render.yaml) | ✅ |
 | 16 | SECRET_KEY con fallback automático si no está en .env | ✅ |
-| 17 | Código muerto eliminado en auth.py (líneas post-return) | ✅ |
-| 18 | Deprecation warnings: Pydantic V2 ConfigDict, lifespan, TemplateResponse, utcnow | ✅ |
-| 19 | Validación horario coherente (apertura/cierre) en settings | ✅ |
-| 20 | Soporte PostgreSQL via DATABASE_URL (Railway) con fallback a SQLite local | ✅ |
-| 21 | Alembic migrations ejecutadas al startup (reemplaza create_all()) | ✅ |
+| 17 | Código muerto eliminado | ✅ |
+| 18 | Deprecation warnings: Pydantic V2 ConfigDict, lifespan, utcnow | ✅ |
+| 19 | Validación horario coherente (apertura/cierre) | ✅ |
+| 20 | Soporte PostgreSQL (Railway) + SQLite (local) intercambiables | ✅ |
+| 21 | Alembic migrations ejecutadas al startup | ✅ |
 | 22 | Dominio dinámico en dashboard (base_url desde request) | ✅ |
-| 23 | Precio con decimales en dashboard (%.0f → %.2f) | ✅ |
-| 24 | Eliminar checkbox 'Recordarme' sin implementación | ✅ |
-| 25 | Eliminar link muerto '¿Olvidaste tu contraseña?' | ✅ |
-| 26 | Renombrar imágenes con espacios (logo X.jpeg → logo-X.jpeg) | ✅ |
-| 27 | CSRF cookie: centralizar COOKIE_CONFIG en csrf.py y reusar | ✅ |
-| 28 | N+1 query en reorder → bulk update (1 query vs N queries) | ✅ |
-| 29 | Carrito persistente en localStorage (no se pierde al refrescar) | ✅ |
-| 30 | Security headers: Strict-Transport-Security, Referrer-Policy | ✅ |
-
-## 🟢 FASE 3 — Experiencia de Usuario
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 31 | Diseño mobile-first responsive (Tailwind CSS) | ✅ |
-| 32 | Modo oscuro nativo | ✅ |
-| 33 | Loading spinner mientras carga el menú | ✅ |
-| 34 | Toast de "agregado al carrito" | ✅ |
-| 35 | Carrito persistente en sesión (en memoria + localStorage) | ✅ |
-| 36 | Botón flotante de carrito con contador | ✅ |
-| 37 | Drawer lateral para el carrito | ✅ |
-| 38 | Selector de entrega (domicilio / retiro) con campos condicionales | ✅ |
-| 39 | Selector de método de pago | ✅ |
-| 40 | Comentario del pedido (textarea) | ✅ |
-| 41 | Fotos de productos en el menú | ✅ |
-| 42 | Búsqueda/filtro de productos en el menú | ✅ |
-| 43 | Navegación rápida por categorías (scroll horizontal) | ✅ |
-| 44 | Personalización de colores/marca por comercio | ✅ |
-| 45 | Modo de sólo lectura para horario cerrado | ✅ |
-
-## 🔵 FASE 4 — Administración Avanzada
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 46 | CRUD de productos (crear, editar, eliminar, ocultar) | ✅ |
-| 47 | CRUD de categorías (crear, editar, eliminar) | ✅ |
-| 48 | Configuración del comercio (nombre, email, WhatsApp, password) | ✅ |
-| 49 | Toggle de disponibilidad de producto (mostrar/ocultar) | ✅ |
-| 50 | Configuración de delivery (precio, disponible) | ✅ |
-| 51 | Configuración de métodos de pago (transferencia, efectivo) | ✅ |
-| 52 | Ordenar productos por arrastrar (drag & drop) | ✅ |
-| 53 | Duplicar producto | ✅ |
-| 54 | Importar/exportar productos (CSV) | ✅ |
-| 55 | Previsualización del menú público desde admin | ✅ |
-| 56 | Estadísticas del menú (vistas, clics en WhatsApp) | ✅ |
-| 57 | Múltiples usuarios por comercio (roles) | ❌ eliminado |
-
-## 🟣 FASE 5 — Pagos y Facturación
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 58 | Integración con Mercado Pago (endpoints + preferencias) | ⏳ |
-| 59 | QR para transferencia bancaria (CBU/alias) | ⏳ |
-| 60 | Factura electrónica / comprobante simple | ⏳ |
-| 61 | Cobro con tarjeta (Mercado Pago Checkout API) | ⏳ |
-
-## 🟠 FASE 6 — Notificaciones y Comunicación
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 62 | Mensaje formateado a WhatsApp con resumen del pedido | ✅ |
-| 63 | Incluir # de orden en el mensaje de WhatsApp | ❌ eliminado |
-| 64 | Notificación al cliente cuando el pedido está listo | ⏳ |
-| 65 | Email de confirmación al cliente | ⏳ |
-| 66 | WhatsApp Business API (en vez de wa.me) | ⏳ |
-| 67 | Recordatorio automático de pedido pendiente | ⏳ |
-
-## ⚪ FASE 7 — Multi-Tenant y Escalabilidad
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 68 | Registro de nuevo comercio (signup) | ✅ |
-| 69 | Login con sesión | ✅ |
-| 70 | Slug único por comercio (URL amigable) | ✅ |
-| 71 | Seed data inicial (comercio demo + categorías + productos) | ✅ |
-| 72 | Soporte PostgreSQL (Railway) + SQLite (local) intercambiables | ✅ |
-| 73 | Plan gratis / plan premium por comercio (upgrade UI, expiración automática) | ✅ |
-| 74 | Subdominio personalizado (micomida.pedime.app) | ⏳ |
-| 75 | Dominio personalizado (menu.micomida.com) | ⏳ |
-
-## 🟤 FASE 8 — Infraestructura y DevOps
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 76 | Alembic para migraciones de base de datos (ejecutadas al startup) | ✅ |
-| 77 | Logging estructurado (fecha, nivel, módulo) | ✅ |
-| 78 | Secret key desde variable de entorno | ✅ |
-| 79 | Docker / docker-compose para despliegue | ⏳ |
-| 80 | CI/CD (GitHub Actions) | ⏳ |
-| 81 | Tests automatizados (44 tests: 25 seguridad + 19 admin CRUD) | ✅ |
-| 82 | HTTPS (certbot / Caddy) | ⏳ |
-| 83 | Backup automático de base de datos | ⏳ |
-
-## 🧪 FASE 9 — Testing
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 84 | Tests de menú público (6 tests: rutas, API, login/register page) | ✅ |
-| 85 | Tests de seguridad (19 tests: XSS, SQLi, CSRF, rate limit, headers) | ✅ |
-| 86 | Tests de admin CRUD (19 tests: productos, categorías, settings) | ✅ |
-
-## 📄 FASE 10 — Documentación y Código
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 87 | README.md con setup, tests, estructura y deploy | ✅ |
-| 88 | Código comentado por bloques lógicos en español | ✅ |
+| 23 | Precio con decimales en dashboard | ✅ |
+| 24 | Eliminar elementos muertos del login (Recordarme, olvidé contraseña) | ✅ |
+| 25 | CSRF cookie centralizada (COOKIE_CONFIG) | ✅ |
+| 26 | N+1 query en reorder → bulk update | ✅ |
+| 27 | Carrito persistente en localStorage | ✅ |
 
 ---
 
-**Leyenda:** ✅ Completado | ⏳ Pendiente | ❌ Eliminado
-
-## 🎨 FASE 11 — Logo y Branding
+## FASE 2 — Experiencia de Usuario Pública ✅
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 89 | Landing page rebrand: "menú digital" → "catálogo digital", "Crear mi menú" → "Crear mi tienda", "Cargá tu menú" → "Cargá tus productos" | ✅ |
-| 90 | 6 cards "¿Para quién es?" variadas | ✅ |
-| 91 | Logo original restaurado (1076×718), display círculo 160×160 con `object-contain` | ✅ |
-| 92 | Logo posicionado `-left-8` + `z-50` para visibilidad en mobile | ✅ |
-| 93 | Favicon (logo-6.png como favicon.ico) en pestaña del navegador | ✅ |
-
-## 🐛 FASE 12 — Bugfixes
-
-| # | Feature | Estado |
-|---|---------|--------|
-| 94 | Cuentas duplicadas con mismo email — IntegrityError distingue email vs slug | ✅ |
-| 95 | Stock opcional en producto (0 = sin límite) — modelo, migración, form, API, CSV | ✅ |
-| 96 | Duplicado copia `sort_order` para aparecer justo debajo del original | ✅ |
-| 97 | Límite 10 productos por categoría en duplicar e importar CSV | ✅ |
+| 28 | Diseño mobile-first responsive (Tailwind CSS) | ✅ |
+| 29 | Modo oscuro nativo | ✅ |
+| 30 | Loading spinner mientras carga el menú | ✅ |
+| 31 | Toast de "agregado al carrito" | ✅ |
+| 32 | Botón flotante de carrito con contador | ✅ |
+| 33 | Drawer lateral para el carrito | ✅ |
+| 34 | Selector de entrega (domicilio / retiro) con campos condicionales | ✅ |
+| 35 | Selector de método de pago (transferencia / efectivo) | ✅ |
+| 36 | Comentario del pedido (textarea) | ✅ |
+| 37 | Fotos de productos en el menú | ✅ |
+| 38 | Búsqueda/filtro de productos en tiempo real | ✅ |
+| 39 | Navegación rápida por categorías (scroll horizontal) | ✅ |
+| 40 | Personalización de colores/marca por comercio | ✅ |
+| 41 | Menú colapsable por categorías | ✅ |
 
 ---
 
-**Leyenda:** ✅ Completado | ⏳ Pendiente | ❌ Eliminado
+## FASE 3 — Administración Avanzada ✅
 
-Última actualización: 25/06/2026
+| # | Feature | Estado |
+|---|---------|--------|
+| 42 | Dashboard con tabs persistentes (HTMX) sin recarga de página | ✅ |
+| 43 | CRUD de productos (crear, editar, eliminar, ocultar) | ✅ |
+| 44 | CRUD de categorías (crear, editar inline, eliminar) | ✅ |
+| 45 | Configuración del comercio (nombre, email, WhatsApp, password) | ✅ |
+| 46 | Toggle de disponibilidad de producto (mostrar/ocultar) | ✅ |
+| 47 | Configuración de delivery (precio, disponible) | ✅ |
+| 48 | Configuración de métodos de pago (transferencia, efectivo) | ✅ |
+| 49 | Ordenar productos por drag & drop (SortableJS) | ✅ |
+| 50 | Duplicar producto | ✅ |
+| 51 | Importar/exportar productos (CSV) | ✅ |
+| 52 | Previsualización del menú público desde admin | ✅ |
+| 53 | Estadísticas del menú (vistas, clics en WhatsApp, conversión) | ✅ |
+| 54 | Plan gratis / plan premium (upgrade UI, expiración automática) | ✅ |
+| 55 | Super admin (gestionar stores, planes, reset pass, eliminar) | ✅ |
+
+---
+
+## FASE 4 — Testing y Calidad ✅
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 56 | Tests de menú público (6 tests) | ✅ |
+| 57 | Tests de seguridad (19 tests: XSS, SQLi, CSRF, rate limit, headers) | ✅ |
+| 58 | Tests de admin CRUD (19 tests: productos, categorías, settings) | ✅ |
+| 59 | Tests de super admin (12 tests) | ✅ |
+| 60 | Linting con Ruff (target py312, line-length 120) | ✅ |
+| 61 | Fix: Modal duplicado en HTMX swap | ✅ |
+| 62 | Fix: Unificar create/edit producto en un solo endpoint | ✅ |
+
+---
+
+## FASE 5 — Landing y Branding ✅
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 63 | Landing page con hero, pasos, público objetivo | ✅ |
+| 64 | 6 cards "¿Para quién es?" (restaurantes, bebidas, ropa, limpieza, regalos, almacén) | ✅ |
+| 65 | Logo en círculo 160×160 con object-contain | ✅ |
+| 66 | Favicon personalizado | ✅ |
+| 67 | README.md con setup, tests, estructura y deploy | ✅ |
+| 68 | Código comentado por bloques lógicos en español | ✅ |
+
+---
+
+## FASE 6 — Personalización de Productos (Variantes) 🔨
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 69 | Migración DB: columna `variants` en products (JSON) | ⏳ |
+| 70 | Modelo: campo `variants` en Product | ⏳ |
+| 71 | Schema: `variants` en ProductOut (API pública) | ⏳ |
+| 72 | Admin API: crear/editar producto con variantes | ⏳ |
+| 73 | Admin API: validación de variantes (JSON, nombres, precios, límites) | ⏳ |
+| 74 | Admin API: plan Premium requerido para variantes | ⏳ |
+| 75 | Admin UI: modal con editor de variantes (agregar/quitar filas) | ⏳ |
+| 76 | Menú público: selector de variante por producto (select/radio) | ⏳ |
+| 77 | Carrito: mostrar variante seleccionada en nombre y precio | ⏳ |
+| 78 | WhatsApp: incluir variante en el mensaje | ⏳ |
+| 79 | CSV export/import con columna variants | ⏳ |
+| 80 | Tests: crear, editar, validar variantes en API | ⏳ |
+
+---
+
+## FASE 7 — Pagos y Facturación ⏳
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 81 | Integración con Mercado Pago (preferencias + webhook) | ⏳ |
+| 82 | QR para transferencia bancaria (CBU/alias) | ⏳ |
+| 83 | Factura electrónica / comprobante simple | ⏳ |
+| 84 | Cobro con tarjeta (Mercado Pago Checkout API) | ⏳ |
+
+---
+
+## FASE 8 — Notificaciones y Comunicación ⏳
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 85 | Mensaje formateado a WhatsApp con resumen del pedido | ✅ |
+| 86 | Notificación al cliente cuando el pedido está listo | ⏳ |
+| 87 | Email de confirmación al cliente | ⏳ |
+| 88 | WhatsApp Business API (en vez de wa.me) | ⏳ |
+| 89 | Recordatorio automático de pedido pendiente | ⏳ |
+
+---
+
+## FASE 9 — Multi-Tenant y Escalabilidad ⏳
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 90 | Registro de nuevo comercio (signup) | ✅ |
+| 91 | Login con sesión | ✅ |
+| 92 | Slug único por comercio (URL amigable) | ✅ |
+| 93 | Seed data inicial (comercio demo) | ✅ |
+| 94 | Soporte PostgreSQL (Railway) + SQLite (local) | ✅ |
+| 95 | Subdominio personalizado (micomida.pedime.app) | ⏳ |
+| 96 | Dominio personalizado (menu.micomida.com) | ⏳ |
+| 97 | Múltiples usuarios por comercio (roles) | ❌ eliminado |
+
+---
+
+## FASE 10 — Infraestructura y DevOps ⏳
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 98 | Alembic para migraciones (ejecutadas al startup) | ✅ |
+| 99 | Logging estructurado (fecha, nivel, módulo) | ✅ |
+| 100 | Secret key desde variable de entorno | ✅ |
+| 101 | Docker / docker-compose para despliegue | ⏳ |
+| 102 | CI/CD (GitHub Actions) | ⏳ |
+| 103 | HTTPS (certbot / Caddy) | ⏳ |
+| 104 | Backup automático de base de datos | ⏳ |
+
+---
+
+**Leyenda:** ✅ Completado | ⏳ Pendiente | 🔨 En progreso | ❌ Eliminado
+
+**Resumen:** 68 completadas · 26 pendientes · 1 eliminada
+
+Última actualización: 06/07/2026
