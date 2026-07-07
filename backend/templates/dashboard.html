@@ -93,12 +93,12 @@
                 <div class="product-category-group mb-3">
                     <div class="flex items-center gap-2 mb-2">
                         <button onclick="toggleCategory({{ cat.id }})" class="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition">
-                            <span id="cat-arrow-{{ cat.id }}" class="transition-transform duration-200">▼</span>
+                            <span id="cat-arrow-{{ cat.id }}" class="transition-transform duration-200" style="transform:rotate(-90deg)">▶</span>
                             <span>{{ cat.name }}</span>
                             <span class="text-xs text-gray-600 font-normal">({{ cat_prods|length }})</span>
                         </button>
                     </div>
-                    <div id="cat-group-{{ cat.id }}">
+                    <div id="cat-group-{{ cat.id }}" style="display:none">
                     {% for prod in cat_prods %}
                     <div class="product-sort bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center gap-4 cursor-grab active:cursor-grabbing" data-id="{{ prod.id }}">
                         <div class="flex-1 min-w-0">
@@ -547,7 +547,24 @@
         });
     });
 
-    // Toggle colapsable de categorías
+    // Categorías colapsables — estado expandido
+    let expandedCategories = new Set();
+
+    // Restaura colapso/expansión después de cada render vía HTMX
+    document.addEventListener('htmx:afterSwap', function() {
+        document.querySelectorAll('[id^="cat-group-"]').forEach(group => {
+            const id = parseInt(group.id.replace('cat-group-', ''));
+            const arrow = document.getElementById('cat-arrow-' + id);
+            if (expandedCategories.has(id)) {
+                group.style.display = '';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            } else {
+                group.style.display = 'none';
+                if (arrow) arrow.style.transform = 'rotate(-90deg)';
+            }
+        });
+    });
+
     function toggleCategory(id) {
         const group = document.getElementById('cat-group-' + id);
         const arrow = document.getElementById('cat-arrow-' + id);
@@ -555,6 +572,8 @@
         const isHidden = group.style.display === 'none';
         group.style.display = isHidden ? '' : 'none';
         arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+        if (isHidden) expandedCategories.add(id);
+        else expandedCategories.delete(id);
     }
 
     // Preservar scroll al recargar el contenido vía HTMX
