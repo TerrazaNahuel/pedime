@@ -10,6 +10,8 @@ import io
 import re
 import urllib.parse
 
+from models import Store
+
 
 def _csrf(client, url):
     """Helper: GET a URL, sigue redirects, devuelve (token, response)."""
@@ -18,6 +20,13 @@ def _csrf(client, url):
     assert m, f"No CSRF token found in {url}"
     return m.group(1), resp
 
+
+def _make_premium(db, store_id):
+    """Actualiza el plan del store a premium para tests de variantes."""
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if store:
+        store.plan = "premium"
+        db.commit()
 
 def _login(client, email="test@test.com", password="Test1234"):
     """Helper: inicia sesión como seed_store y devuelve token CSRF del dashboard."""
@@ -164,6 +173,116 @@ class TestProducts:
         }, follow_redirects=False)
         assert resp.status_code == 302
 
+    def test_create_product_with_variants(self, client, seed_store, db):
+        """Crear producto con variantes debe persistirlas."""
+        _make_premium(db, seed_store.id)
+        csrf = _login(client)
+        resp = client.post("/admin/product", data={
+            "name": "Hamburguesa",
+            "description": "Con variantes",
+            "price": "1000",
+            "category_id": "1",
+            "image_url": "",
+            "variants": '[{"name":"Simple","price":800},{"name":"Doble","price":1200}]',
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+
+        resp = client.get("/api/menu/test-store")
+        assert resp.status_code == 200
+        data = resp.json()
+        prod = data["categories"][0]["products"][0]
+        assert prod["variants"] == '[{"name":"Simple","price":800},{"name":"Doble","price":1200}]'
+
+    def test_create_product_invalid_variants_json_rejected(self, client, seed_store):
+        """JSON de variantes inválido debe ser rechazado."""
+        csrf = _login(client)
+        resp = client.post("/admin/product", data={
+            "name": "Test", "description": "",
+            "price": "100", "category_id": "1",
+            "image_url": "",
+            "variants": "not-json",
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+        assert "variante" in resp.headers.get("location", "").lower()
+
+    def test_create_product_variant_empty_name_rejected(self, client, seed_store, db):
+        """Variante con nombre vacío debe ser rechazada."""
+        _make_premium(db, seed_store.id)
+        csrf = _login(client)
+        resp = client.post("/admin/product", data={
+            "name": "Test", "description": "",
+            "price": "100", "category_id": "1",
+            "image_url": "",
+            "variants": '[{"name":"","price":800}]',
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+        assert "nombre" in resp.headers.get("location", "").lower()
+
+    def test_create_product_variant_negative_price_rejected(self, client, seed_store, db):
+        """Variante con precio negativo debe ser rechazada."""
+        _make_premium(db, seed_store.id)
+        csrf = _login(client)
+        resp = client.post("/admin/product", data={
+            "name": "Test", "description": "",
+            "price": "100", "category_id": "1",
+            "image_url": "",
+            "variants": '[{"name":"Simple","price":-100}]',
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+        assert "precio" in resp.headers.get("location", "").lower()
+
+    def test_edit_product_variants(self, client, seed_store, db):
+        """Editar producto debe actualizar variantes."""
+        _make_premium(db, seed_store.id)
+        csrf = _login(client)
+        client.post("/admin/product", data={
+            "name": "Original", "description": "",
+            "price": "100", "category_id": "1",
+            "image_url": "", "csrf_token": csrf,
+        }, follow_redirects=False)
+        csrf = _csrf(client, "/admin/dashboard")[0]
+
+        resp = client.post("/admin/product/1/edit", data={
+            "name": "Edited", "description": "",
+            "price": "200", "category_id": "1",
+            "available": "1", "image_url": "",
+            "variants": '[{"name":"Triple","price":300}]',
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+
+        resp = client.get("/api/menu/test-store")
+        data = resp.json()
+        prod = data["categories"][0]["products"][0]
+        assert prod["variants"] == '[{"name":"Triple","price":300}]'
+
+    def test_duplicate_product_with_variants(self, client, seed_store, db):
+        """Duplicar producto debe copiar también las variantes."""
+        _make_premium(db, seed_store.id)
+        csrf = _login(client)
+        client.post("/admin/product", data={
+            "name": "Con Variantes", "description": "",
+            "price": "100", "category_id": "1",
+            "image_url": "",
+            "variants": '[{"name":"S","price":50},{"name":"L","price":150}]',
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        csrf = _csrf(client, "/admin/dashboard")[0]
+
+        resp = client.post("/admin/product/1/duplicate", data={
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+
+        resp = client.get("/api/menu/test-store")
+        data = resp.json()
+        assert len(data["categories"][0]["products"]) == 2
+        assert data["categories"][0]["products"][1]["variants"] == data["categories"][0]["products"][0]["variants"]
+
     def test_export_csv(self, client, seed_store):
         """Exportar CSV debe incluir los productos creados."""
         csrf = _login(client)
@@ -249,7 +368,6 @@ class TestCategories:
 
         _, dash = _csrf(client, "/admin/dashboard")
         assert "Cat To Delete" not in dash.text
-
 
 class TestSettings:
     def test_update_settings(self, client, seed_store):

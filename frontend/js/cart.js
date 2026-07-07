@@ -45,7 +45,13 @@ function loadCartState() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) return;
         const data = JSON.parse(saved);
-        if (data.cart) cart = data.cart;
+        if (data.cart) {
+            cart = data.cart;
+            // Migrar items existentes sin variant
+            Object.values(cart).forEach(item => {
+                if (item.variant === undefined) item.variant = null;
+            });
+        }
         if (data.selectedDelivery !== undefined) selectedDelivery = data.selectedDelivery;
         if (data.selectedPayment) selectedPayment = data.selectedPayment;
         if (data.deliveryAddress) deliveryAddress = data.deliveryAddress;
@@ -246,10 +252,28 @@ function renderMenu() {
                 info.appendChild(desc);
             }
 
-            const price = document.createElement("p");
-            price.className = "text-emerald-400 font-bold mt-1";
-            price.textContent = "$" + prod.price.toLocaleString("es-AR");
-            info.appendChild(price);
+            let variantsArr = null;
+            try {
+                const v = JSON.parse(prod.variants || "[]");
+                if (Array.isArray(v) && v.length) variantsArr = v;
+            } catch {}
+
+            if (variantsArr) {
+                const select = document.createElement("select");
+                select.className = "w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-2 py-1 text-white text-sm mt-1";
+                variantsArr.forEach((v, i) => {
+                    const opt = document.createElement("option");
+                    opt.value = i;
+                    opt.textContent = v.name + " - $" + Number(v.price).toLocaleString("es-AR");
+                    select.appendChild(opt);
+                });
+                info.appendChild(select);
+            } else {
+                const price = document.createElement("p");
+                price.className = "text-emerald-400 font-bold mt-1";
+                price.textContent = "$" + prod.price.toLocaleString("es-AR");
+                info.appendChild(price);
+            }
 
             card.appendChild(info);
 
@@ -274,7 +298,15 @@ function renderMenu() {
                 const addBtn = document.createElement("button");
                 addBtn.className = "w-8 h-8 rounded-full bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition text-lg flex items-center justify-center";
                 addBtn.textContent = "+";
-                addBtn.onclick = () => addToCart(prod.id, prod.name, prod.price);
+                if (variantsArr) {
+                    addBtn.onclick = () => {
+                        const idx = parseInt(select.value);
+                        const v = variantsArr[idx];
+                        addToCart(prod.id, prod.name, Number(v.price), v);
+                    };
+                } else {
+                    addBtn.onclick = () => addToCart(prod.id, prod.name, prod.price);
+                }
                 qtyDiv.appendChild(addBtn);
 
                 card.appendChild(qtyDiv);
@@ -359,20 +391,31 @@ function updateProductQtyInDOM(id) {
     addBtn.className = "w-8 h-8 rounded-full bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition text-lg flex items-center justify-center";
     addBtn.textContent = "+";
     const prod = storeData.categories.flatMap(c => c.products).find(p => p.id === id);
-    addBtn.onclick = () => addToCart(id, prod ? prod.name : "Producto", prod ? prod.price : 0);
+    let defaultVariant = null;
+    if (prod) {
+        try {
+            const v = JSON.parse(prod.variants || "[]");
+            if (Array.isArray(v) && v.length) defaultVariant = v[0];
+        } catch {}
+    }
+    if (defaultVariant) {
+        addBtn.onclick = () => addToCart(id, prod.name, Number(defaultVariant.price), defaultVariant);
+    } else {
+        addBtn.onclick = () => addToCart(id, prod ? prod.name : "Producto", prod ? prod.price : 0);
+    }
     qtyDiv.appendChild(addBtn);
     card.appendChild(qtyDiv);
     updateCartUI();
 }
 
 /** Agrega un producto al carrito. */
-function addToCart(id, name, price) {
+function addToCart(id, name, price, variant = null) {
     if (!isStoreOpen()) return;
-    if (!cart[id]) cart[id] = { qty: 0, name, price };
+    if (!cart[id]) cart[id] = { qty: 0, name, price, variant };
     cart[id].qty++;
     saveCartState();
     updateProductQtyInDOM(id);
-    showToast(name);
+    showToast(variant ? name + " (" + variant.name + ")" : name);
 }
 
 /** Reduce la cantidad o elimina un producto del carrito. */
@@ -655,7 +698,7 @@ function renderCartItems() {
 
         const name = document.createElement("p");
         name.className = "text-white font-medium";
-        name.textContent = item.name;
+        name.textContent = item.variant ? item.name + " (" + item.variant.name + ")" : item.name;
         left.appendChild(name);
 
         const subtotal = document.createElement("p");
@@ -683,7 +726,7 @@ function renderCartItems() {
         const plus = document.createElement("button");
         plus.className = "w-7 h-7 rounded-full bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition flex items-center justify-center";
         plus.textContent = "+";
-        plus.onclick = () => { addToCart(parseInt(id), item.name, item.price); renderCartItems(); updateCartUI(); };
+        plus.onclick = () => { addToCart(parseInt(id), item.name, item.price, item.variant); renderCartItems(); updateCartUI(); };
         right.appendChild(plus);
 
         el.appendChild(right);
@@ -725,13 +768,16 @@ whatsappBtn.onclick = () => {
     const phone = storeData.whatsapp.replace(/\D/g, "");
     const deliveryCost = isDelivery ? Number(storeData.delivery_price) : 0;
     const items = entries.map(([, item]) => ({
-        qty: item.qty, name: item.name, price: item.price,
+        qty: item.qty, name: item.name, price: item.price, variant: item.variant,
     }));
     const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
     const total = subtotal + deliveryCost;
 
     let msg = "Hola, quisiera pedir:\n";
-    items.forEach(it => { msg += "- " + it.qty + "x " + it.name + " ($" + (it.price * it.qty).toLocaleString("es-AR") + ")\n"; });
+    items.forEach(it => {
+        const label = it.variant ? it.name + " (" + it.variant.name + ")" : it.name;
+        msg += "- " + it.qty + "x " + label + " ($" + (it.price * it.qty).toLocaleString("es-AR") + ")\n";
+    });
     msg += "\n📍 " + (isDelivery ? "A domicilio" : "Retiro en local");
     if (isDelivery && address) { msg += "\n   Dirección: " + address; if (reference) msg += "\n   Referencia: " + reference; }
     if (comment) msg += "\n📝 " + comment;

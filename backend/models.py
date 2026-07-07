@@ -69,6 +69,7 @@ class Product(Base):
     stock = Column(Integer, default=0)  # 0 = sin límite de stock
     image_url = Column(String(500), default="")
     sort_order = Column(Integer, default=0)  # Orden personalizado por drag & drop
+    variants = Column(Text, default="")  # JSON: [{"name":"Doble","price":150}]
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
 

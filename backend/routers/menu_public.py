@@ -87,6 +87,7 @@ def get_menu(slug: str, db: Session = Depends(get_db)):
                 stock=p.stock or 0,
                 image_url=p.image_url or "",
                 category_id=p.category_id,
+                variants=p.variants or "",
             )
         )
 

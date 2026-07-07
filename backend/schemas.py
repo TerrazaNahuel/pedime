@@ -20,6 +20,7 @@ class ProductOut(BaseModel):
     stock: int = 0  # 0 = sin límite
     image_url: str = ""
     category_id: int
+    variants: str = ""  # JSON string con variantes del producto
 
 
 class CategoryOut(BaseModel):

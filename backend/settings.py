@@ -10,6 +10,7 @@ MAX_PRODUCTS_PER_CATEGORY = int(os.getenv("MAX_PRODUCTS_PER_CATEGORY", "10"))
 MAX_CATEGORIES = int(os.getenv("MAX_CATEGORIES", "5"))
 MAX_REORDER_IDS = int(os.getenv("MAX_REORDER_IDS", "500"))
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE_MB", "10")) * 1024 * 1024
+MAX_VARIANTS = int(os.getenv("MAX_VARIANTS", "10"))
 
 # Rate limits
 LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
