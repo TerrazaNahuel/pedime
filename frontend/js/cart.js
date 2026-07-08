@@ -25,9 +25,24 @@ let deliveryReference = "";
 let orderComment = "";
 let expandedCategories = new Set();
 
+const CART_VERSION = 2;
+
+function cartKey(id, variantIndex) {
+    return variantIndex != null ? id + "_" + variantIndex : String(id);
+}
+
+function parseCartKey(key) {
+    const parts = key.split("_");
+    if (parts.length === 2 && !isNaN(parts[1])) {
+        return { id: parseInt(parts[0]), variantIndex: parseInt(parts[1]) };
+    }
+    return { id: parseInt(key), variantIndex: null };
+}
+
 function saveCartState() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            _version: CART_VERSION,
             cart,
             selectedDelivery,
             selectedPayment,
@@ -45,11 +60,16 @@ function loadCartState() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) return;
         const data = JSON.parse(saved);
+        if (data._version !== CART_VERSION) {
+            cart = {};
+            saveCartState();
+            return;
+        }
         if (data.cart) {
             cart = data.cart;
-            // Migrar items existentes sin variant
             Object.values(cart).forEach(item => {
                 if (item.variant === undefined) item.variant = null;
+                if (item.variantIndex === undefined) item.variantIndex = null;
             });
         }
         if (data.selectedDelivery !== undefined) selectedDelivery = data.selectedDelivery;
@@ -261,6 +281,7 @@ function renderMenu() {
             if (variantsArr) {
                 const select = document.createElement("select");
                 select.className = "w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-2 py-1 text-white text-sm mt-1";
+                select.onchange = () => updateProductQtyInDOM(prod.id);
                 variantsArr.forEach((v, i) => {
                     const opt = document.createElement("option");
                     opt.value = i;
@@ -280,19 +301,36 @@ function renderMenu() {
             if (isStoreOpen()) {
                 // Controles de cantidad (solo si el local está abierto)
                 const qtyDiv = document.createElement("div");
-                qtyDiv.className = "flex items-center gap-2";
+                qtyDiv.className = "qty-controls flex items-center gap-2";
 
-                if (cart[prod.id]) {
-                    const minus = document.createElement("button");
-                    minus.className = "w-8 h-8 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition text-lg flex items-center justify-center";
-                    minus.textContent = "\u2212";
-                    minus.onclick = () => removeFromCart(prod.id);
-                    qtyDiv.appendChild(minus);
+                if (variantsArr) {
+                    const selectedIdx = parseInt(select.value);
+                    const key = cartKey(prod.id, selectedIdx);
+                    if (cart[key]) {
+                        const minus = document.createElement("button");
+                        minus.className = "w-8 h-8 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition text-lg flex items-center justify-center";
+                        minus.textContent = "\u2212";
+                        minus.onclick = () => removeFromCart(prod.id, selectedIdx);
+                        qtyDiv.appendChild(minus);
 
-                    const count = document.createElement("span");
-                    count.className = "text-white font-bold w-6 text-center";
-                    count.textContent = cart[prod.id].qty;
-                    qtyDiv.appendChild(count);
+                        const count = document.createElement("span");
+                        count.className = "text-white font-bold w-6 text-center";
+                        count.textContent = cart[key].qty;
+                        qtyDiv.appendChild(count);
+                    }
+                } else {
+                    if (cart[prod.id]) {
+                        const minus = document.createElement("button");
+                        minus.className = "w-8 h-8 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition text-lg flex items-center justify-center";
+                        minus.textContent = "\u2212";
+                        minus.onclick = () => removeFromCart(prod.id);
+                        qtyDiv.appendChild(minus);
+
+                        const count = document.createElement("span");
+                        count.className = "text-white font-bold w-6 text-center";
+                        count.textContent = cart[prod.id].qty;
+                        qtyDiv.appendChild(count);
+                    }
                 }
 
                 const addBtn = document.createElement("button");
@@ -302,7 +340,7 @@ function renderMenu() {
                     addBtn.onclick = () => {
                         const idx = parseInt(select.value);
                         const v = variantsArr[idx];
-                        addToCart(prod.id, prod.name, Number(v.price), v);
+                        addToCart(prod.id, prod.name, Number(v.price), v, idx);
                     };
                 } else {
                     addBtn.onclick = () => addToCart(prod.id, prod.name, prod.price);
@@ -374,32 +412,42 @@ function updateProductQtyInDOM(id) {
     const oldQtyDiv = card.querySelector(".qty-controls");
     if (oldQtyDiv) oldQtyDiv.remove();
     if (!isStoreOpen()) return;
+
+    const select = card.querySelector("select");
+    let variantIndex = null;
+    if (select) {
+        variantIndex = parseInt(select.value);
+    }
+
     const qtyDiv = document.createElement("div");
     qtyDiv.className = "qty-controls flex items-center gap-2";
-    if (cart[id]) {
+
+    const key = cartKey(id, variantIndex);
+    if (cart[key]) {
         const minus = document.createElement("button");
         minus.className = "w-8 h-8 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition text-lg flex items-center justify-center";
         minus.textContent = "\u2212";
-        minus.onclick = () => removeFromCart(id);
+        minus.onclick = () => removeFromCart(id, variantIndex);
         qtyDiv.appendChild(minus);
         const count = document.createElement("span");
         count.className = "text-white font-bold w-6 text-center";
-        count.textContent = cart[id].qty;
+        count.textContent = cart[key].qty;
         qtyDiv.appendChild(count);
     }
+
     const addBtn = document.createElement("button");
     addBtn.className = "w-8 h-8 rounded-full bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition text-lg flex items-center justify-center";
     addBtn.textContent = "+";
     const prod = storeData.categories.flatMap(c => c.products).find(p => p.id === id);
-    let defaultVariant = null;
-    if (prod) {
-        try {
-            const v = JSON.parse(prod.variants || "[]");
-            if (Array.isArray(v) && v.length) defaultVariant = v[0];
-        } catch {}
-    }
-    if (defaultVariant) {
-        addBtn.onclick = () => addToCart(id, prod.name, Number(defaultVariant.price), defaultVariant);
+    if (select && prod) {
+        addBtn.onclick = () => {
+            const idx = parseInt(select.value);
+            try {
+                const variants = JSON.parse(prod.variants || "[]");
+                const v = variants[idx];
+                if (v) addToCart(id, prod.name, Number(v.price), v, idx);
+            } catch {}
+        };
     } else {
         addBtn.onclick = () => addToCart(id, prod ? prod.name : "Producto", prod ? prod.price : 0);
     }
@@ -409,20 +457,22 @@ function updateProductQtyInDOM(id) {
 }
 
 /** Agrega un producto al carrito. */
-function addToCart(id, name, price, variant = null) {
+function addToCart(id, name, price, variant = null, variantIndex = null) {
     if (!isStoreOpen()) return;
-    if (!cart[id]) cart[id] = { qty: 0, name, price, variant };
-    cart[id].qty++;
+    const key = cartKey(id, variantIndex);
+    if (!cart[key]) cart[key] = { qty: 0, name, price, variant, variantIndex };
+    cart[key].qty++;
     saveCartState();
     updateProductQtyInDOM(id);
     showToast(variant ? name + " (" + variant.name + ")" : name);
 }
 
 /** Reduce la cantidad o elimina un producto del carrito. */
-function removeFromCart(id) {
-    if (cart[id]) {
-        cart[id].qty--;
-        if (cart[id].qty <= 0) delete cart[id];
+function removeFromCart(id, variantIndex = null) {
+    const key = cartKey(id, variantIndex);
+    if (cart[key]) {
+        cart[key].qty--;
+        if (cart[key].qty <= 0) delete cart[key];
     }
     saveCartState();
     updateProductQtyInDOM(id);
@@ -715,7 +765,7 @@ function renderCartItems() {
         const minus = document.createElement("button");
         minus.className = "w-7 h-7 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition flex items-center justify-center";
         minus.textContent = "\u2212";
-        minus.onclick = () => { removeFromCart(parseInt(id)); renderCartItems(); updateCartUI(); };
+        minus.onclick = () => { removeFromCart(id); renderCartItems(); updateCartUI(); };
         right.appendChild(minus);
 
         const qtySpan = document.createElement("span");
@@ -726,7 +776,12 @@ function renderCartItems() {
         const plus = document.createElement("button");
         plus.className = "w-7 h-7 rounded-full bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition flex items-center justify-center";
         plus.textContent = "+";
-        plus.onclick = () => { addToCart(parseInt(id), item.name, item.price, item.variant); renderCartItems(); updateCartUI(); };
+        plus.onclick = () => {
+            const { id: prodId, variantIndex } = parseCartKey(id);
+            addToCart(prodId, item.name, item.price, item.variant, variantIndex);
+            renderCartItems();
+            updateCartUI();
+        };
         right.appendChild(plus);
 
         el.appendChild(right);
