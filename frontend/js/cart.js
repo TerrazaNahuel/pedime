@@ -278,8 +278,9 @@ function renderMenu() {
                 if (Array.isArray(v) && v.length) variantsArr = v;
             } catch {}
 
+            let select = null;
             if (variantsArr) {
-                const select = document.createElement("select");
+                select = document.createElement("select");
                 select.className = "w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-2 py-1 text-white text-sm mt-1";
                 select.onchange = () => updateProductQtyInDOM(prod.id);
                 variantsArr.forEach((v, i) => {
