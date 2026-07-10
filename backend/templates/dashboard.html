@@ -394,6 +394,10 @@
     </div>
 </div>
 
+<!-- Script inline de restauración: se ejecuta en cada HTMX swap inmediatamente -->
+<script>
+(function(){try{var e=new Set(JSON.parse(sessionStorage.getItem('pedime_exp')||'[]'));document.querySelectorAll('[id^="cat-group-"]').forEach(function(g){var id=parseInt(g.id.replace('cat-group-','')),a=document.getElementById('cat-arrow-'+id);e.has(id)?(g.style.display='',a&&(a.style.transform='rotate(0deg)')):(g.style.display='none',a&&(a.style.transform='rotate(-90deg)'))})}catch(ex){}})();
+</script>
 </div>
 
 <!-- JavaScript del dashboard -->
@@ -592,22 +596,6 @@
                 exp.add(catId);
                 saveExpanded(exp);
             }
-        });
-
-        // Restaurar categorías expandidas después de HTMX swap
-        document.addEventListener('htmx:afterSwap', function() {
-            var expanded = loadExpanded();
-            document.querySelectorAll('[id^="cat-group-"]').forEach(function(group) {
-                var id = parseInt(group.id.replace('cat-group-', ''));
-                var arrow = document.getElementById('cat-arrow-' + id);
-                if (expanded.has(id)) {
-                    group.style.display = '';
-                    if (arrow) arrow.style.transform = 'rotate(0deg)';
-                } else {
-                    group.style.display = 'none';
-                    if (arrow) arrow.style.transform = 'rotate(-90deg)';
-                }
-            });
         });
 
         // Preservar scroll y cerrar modal tras swap
