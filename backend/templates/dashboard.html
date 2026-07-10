@@ -398,24 +398,24 @@
 
 <!-- JavaScript del dashboard -->
 <script>
-    // Estado persistente: sobrevive a re-ejecuciones del script por HTMX swaps
-    var _dashboard = window._dashboard || {
-        expandedCategories: new Set(),
-        currentVariants: [],
-        savedScrollY: 0,
-        initialized: false
-    };
-    window._dashboard = _dashboard;
-    var expandedCategories = _dashboard.expandedCategories;
-    var currentVariants = _dashboard.currentVariants;
-    var savedScrollY = _dashboard.savedScrollY;
+    // currentVariants persistente (evita error let en re-ejecuciones)
+    var currentVariants = window._currentVariants || [];
+    window._currentVariants = currentVariants;
+
+    // Lee categorías expandidas de sessionStorage (inmune a re-ejecuciones del script)
+    function loadExpanded() {
+        try { return new Set(JSON.parse(sessionStorage.getItem('pedime_exp') || '[]')); } catch { return new Set(); }
+    }
+    function saveExpanded(set) {
+        sessionStorage.setItem('pedime_exp', JSON.stringify([...set]));
+    }
 
     function switchTab(tab) {
         document.getElementById('panel-productos').classList.toggle('hidden', tab !== 'productos');
         document.getElementById('panel-categorias').classList.toggle('hidden', tab !== 'categorias');
         document.getElementById('panel-config').classList.toggle('hidden', tab !== 'config');
-        ['productos', 'categorias', 'config'].forEach(t => {
-            const el = document.getElementById('tab-' + t);
+        ['productos', 'categorias', 'config'].forEach(function(t) {
+            var el = document.getElementById('tab-' + t);
             el.className = t === tab
                 ? 'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition bg-emerald-500 text-white'
                 : 'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition text-gray-400 hover:text-white';
@@ -433,7 +433,9 @@
     }
 
     function editProduct(id, name, description, price, categoryId, available, imageUrl, stock, variants) {
-        expandedCategories.add(categoryId);
+        var exp = loadExpanded();
+        exp.add(categoryId);
+        saveExpanded(exp);
         document.getElementById('modal-title').textContent = 'Editar producto';
         document.getElementById('product-id').value = id;
         document.getElementById('product-name').value = name;
@@ -444,7 +446,7 @@
         document.getElementById('product-image').value = imageUrl || '';
         document.getElementById('product-stock').value = stock || 0;
         try {
-            const v = JSON.parse(variants || "[]");
+            var v = JSON.parse(variants || "[]");
             currentVariants = Array.isArray(v) ? v : [];
         } catch {
             currentVariants = [];
@@ -476,31 +478,31 @@
     }
 
     function renderVariants() {
-        const container = document.getElementById("variants-list");
+        var container = document.getElementById("variants-list");
         if (!container) return;
         container.innerHTML = "";
-        currentVariants.forEach((v, i) => {
-            const row = document.createElement("div");
+        currentVariants.forEach(function(v, i) {
+            var row = document.createElement("div");
             row.className = "flex gap-2 items-center";
-            const nameInput = document.createElement("input");
+            var nameInput = document.createElement("input");
             nameInput.type = "text";
             nameInput.value = v.name;
             nameInput.placeholder = "Nombre";
             nameInput.className = "flex-1 bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm";
-            nameInput.onchange = () => { currentVariants[i].name = nameInput.value; syncVariants(); };
-            const priceInput = document.createElement("input");
+            nameInput.onchange = function() { currentVariants[i].name = nameInput.value; syncVariants(); };
+            var priceInput = document.createElement("input");
             priceInput.type = "number";
             priceInput.value = v.price;
             priceInput.placeholder = "Precio";
             priceInput.min = "0";
             priceInput.step = "0.01";
             priceInput.className = "w-24 bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm";
-            priceInput.onchange = () => { currentVariants[i].price = Number(priceInput.value); syncVariants(); };
-            const removeBtn = document.createElement("button");
+            priceInput.onchange = function() { currentVariants[i].price = Number(priceInput.value); syncVariants(); };
+            var removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.className = "text-red-400 hover:text-red-300 text-sm px-2";
             removeBtn.textContent = "✕";
-            removeBtn.onclick = () => removeVariant(i);
+            removeBtn.onclick = function() { removeVariant(i); };
             row.appendChild(nameInput);
             row.appendChild(priceInput);
             row.appendChild(removeBtn);
@@ -510,7 +512,7 @@
     }
 
     function syncVariants() {
-        const el = document.getElementById("product-variants");
+        var el = document.getElementById("product-variants");
         if (el) {
             el.value = currentVariants.length ? JSON.stringify(currentVariants) : "";
         }
@@ -537,19 +539,21 @@
     }
 
     function toggleCategory(id) {
-        const group = document.getElementById('cat-group-' + id);
-        const arrow = document.getElementById('cat-arrow-' + id);
+        var exp = loadExpanded();
+        var group = document.getElementById('cat-group-' + id);
+        var arrow = document.getElementById('cat-arrow-' + id);
         if (!group) return;
-        const isHidden = group.style.display === 'none';
+        var isHidden = group.style.display === 'none';
         group.style.display = isHidden ? '' : 'none';
         arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
-        if (isHidden) expandedCategories.add(id);
-        else expandedCategories.delete(id);
+        if (isHidden) exp.add(id);
+        else exp.delete(id);
+        saveExpanded(exp);
     }
 
     // Inicialización única (solo se ejecuta en la primera carga de página)
-    if (!_dashboard.initialized) {
-        _dashboard.initialized = true;
+    if (!window._dashboardInit) {
+        window._dashboardInit = true;
 
         // Cerrar modal al hacer clic fuera
         document.getElementById('producto-modal').addEventListener('click', function(e) {
@@ -562,7 +566,7 @@
         });
 
         // Enter/Escape para edición de categoría
-        document.querySelectorAll('[id^="cat-input-"]').forEach(input => {
+        document.querySelectorAll('[id^="cat-input-"]').forEach(function(input) {
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') { e.preventDefault(); saveCategory(parseInt(this.id.replace('cat-input-', ''))); }
                 if (e.key === 'Escape') { cancelCategory(parseInt(this.id.replace('cat-input-', ''))); }
@@ -571,32 +575,32 @@
 
         // Capturar category_id antes de requests HTMX
         document.addEventListener('htmx:beforeRequest', function(e) {
-            _dashboard.savedScrollY = window.scrollY;
-            savedScrollY = _dashboard.savedScrollY;
-
-            const elt = e.detail.elt;
-            const form = elt.tagName === 'FORM' ? elt : elt.closest('form');
+            window._savedScroll = window.scrollY;
+            var elt = e.detail.elt;
+            var form = elt.tagName === 'FORM' ? elt : elt.closest('form');
             if (!form) return;
-
-            let catId = null;
+            var catId = null;
             if (form.id === 'producto-form') {
-                const sel = form.querySelector('[name="category_id"]');
+                var sel = form.querySelector('[name="category_id"]');
                 if (sel) catId = parseInt(sel.value);
             }
             if (form.dataset.categoryId) {
                 catId = parseInt(form.dataset.categoryId);
             }
             if (catId && !isNaN(catId)) {
-                expandedCategories.add(catId);
+                var exp = loadExpanded();
+                exp.add(catId);
+                saveExpanded(exp);
             }
         });
 
         // Restaurar categorías expandidas después de HTMX swap
         document.addEventListener('htmx:afterSwap', function() {
-            document.querySelectorAll('[id^="cat-group-"]').forEach(group => {
-                const id = parseInt(group.id.replace('cat-group-', ''));
-                const arrow = document.getElementById('cat-arrow-' + id);
-                if (expandedCategories.has(id)) {
+            var expanded = loadExpanded();
+            document.querySelectorAll('[id^="cat-group-"]').forEach(function(group) {
+                var id = parseInt(group.id.replace('cat-group-', ''));
+                var arrow = document.getElementById('cat-arrow-' + id);
+                if (expanded.has(id)) {
                     group.style.display = '';
                     if (arrow) arrow.style.transform = 'rotate(0deg)';
                 } else {
@@ -608,19 +612,19 @@
 
         // Preservar scroll y cerrar modal tras swap
         document.addEventListener('htmx:afterSwap', function(e) {
-            window.scrollTo(0, _dashboard.savedScrollY);
+            window.scrollTo(0, window._savedScroll || 0);
             closeModal('producto-modal');
         });
 
         // SortableJS: drag & drop para reordenar productos
         try {
-            const productList = document.getElementById('product-list');
+            var productList = document.getElementById('product-list');
             if (productList) {
                 new Sortable(productList, {
                     animation: 200,
                     handle: '.product-sort',
                     onEnd: function() {
-                        const ids = Array.from(productList.querySelectorAll('.product-sort')).map(el => el.dataset.id);
+                        var ids = Array.from(productList.querySelectorAll('.product-sort')).map(function(el) { return el.dataset.id; });
                         document.getElementById('product-order-input').value = ids.join(',');
                         document.getElementById('save-order-btn').closest('form').classList.remove('hidden');
                     }
