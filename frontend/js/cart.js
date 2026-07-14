@@ -249,6 +249,7 @@ function renderProductCard(prod, variantsArr, select) {
         img.className = "w-16 h-16 rounded-xl object-cover shrink-0";
         img.src = prod.image_url;
         img.alt = prod.name;
+        img.loading = "lazy";
         img.onerror = () => img.style.display = "none";
         card.appendChild(img);
     }

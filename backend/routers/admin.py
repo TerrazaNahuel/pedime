@@ -6,6 +6,7 @@ Provee el dashboard principal y el logout.
 """
 
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from csrf import validate_csrf
 from database import get_db
@@ -15,9 +16,12 @@ from models import Category, PageView, Product, WhatsAppClick
 from ratelimit import RateLimiter
 from routers import admin_categories, admin_products, admin_settings
 from routers.admin_base import get_authenticated_store, get_client_ip, logger, render_template_with_csrf
-from sqlalchemy import Column, case
+from sqlalchemy import case
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
+
+if TYPE_CHECKING:
+    from sqlalchemy import Column
 
 router = APIRouter()
 logout_limiter = RateLimiter()
@@ -45,7 +49,7 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
     week_start = today_start - timedelta(days=now.weekday())
     month_start = today_start.replace(day=1)
 
-    def _agg_stats(model: type, time_col: Column) -> dict:
+    def _agg_stats(model: type, time_col: "Column") -> dict:
         """Agrega estadísticas de un modelo (PageView o WhatsAppClick) en una sola query."""
         row = db.query(
             db_func.count(model.id).label("total"),

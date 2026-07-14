@@ -91,7 +91,11 @@ def create_preference(payload: CreatePreferencePayload, request: Request, db: Se
         "external_reference": str(store.id),
         "auto_return": "approved",
     }
-    result = sdk.preference().create(preference_data)
+    try:
+        result = sdk.preference().create(preference_data)
+    except Exception:
+        logger.exception("MP create_preference network error")
+        return JSONResponse({"ok": False, "error": "Error al conectar con Mercado Pago."}, status_code=502)
 
     if result["status"] not in (200, 201):
         logger.error("MP create_preference error: %s", result)
@@ -134,7 +138,11 @@ async def payment_webhook(request: Request, db: Session = Depends(get_db)):
             return JSONResponse({"ok": False, "error": "Falta payment_id"}, status_code=400)
 
         sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
-        payment_info = sdk.payment().get(payment_id)
+        try:
+            payment_info = sdk.payment().get(payment_id)
+        except Exception:
+            logger.exception("MP get_payment network error")
+            return JSONResponse({"ok": False, "error": "Error al consultar Mercado Pago."}, status_code=502)
         if payment_info["status"] != 200:
             logger.error("MP get_payment error: %s", payment_info)
             return JSONResponse({"ok": False}, status_code=502)

@@ -30,7 +30,7 @@ def seed_default_store():
         logger.info("=" * 50)
         logger.info("STORE SEMILLA CREADA")
         logger.info("Email: demo@pedime.app")
-        logger.info("Contraseña: %s", default_password)
+        logger.info("Contraseña: %s...%s", default_password[0], default_password[-1])
         logger.info("¡CAMBIALA apenas puedas desde el panel de admin!")
         logger.info("=" * 50)
 
