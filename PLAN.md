@@ -104,7 +104,7 @@
 | 65 | Logo en círculo 160×160 con object-contain | ✅ |
 | 66 | Favicon personalizado | ✅ |
 | 67 | README.md con setup, tests, estructura y deploy | ✅ |
-| 68 | Código comentado por bloques lógicos en español | ✅ |
+| 68 | Código 100% comentado en español (docstrings + inline) | ✅ |
 
 ---
 
@@ -131,7 +131,7 @@
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 81 | Integración con Mercado Pago (preferencias + webhook) | ✅ |
+| 81 | Integración con Mercado Pago (preferencias + webhook async + fix body parse) | ✅ |
 | 82 | QR para transferencia bancaria (CBU/alias) | ⏳ |
 | 83 | Factura electrónica / comprobante simple | ⏳ |
 | 84 | Cobro con tarjeta (Mercado Pago Checkout API) | ✅ |
@@ -181,6 +181,29 @@
 
 **Leyenda:** ✅ Completado | ⏳ Pendiente | 🔨 En progreso | ❌ Eliminado
 
-**Resumen:** 82 completadas · 12 pendientes · 1 eliminada
+---
 
-Última actualización: 06/07/2026
+## FASE 11 — Refactor y Deuda Técnica (Ronda 3) ✅
+
+| # | Feature | Estado |
+|---|---------|--------|
+| 105 | Webhook MP: eliminar imports muertos (hashlib/hmac), handler async con await request.json() | ✅ |
+| 106 | Eliminar settings no usados: MP_PUBLIC_KEY, LOGOUT_MAX_ATTEMPTS, LOGOUT_WINDOW_SECONDS | ✅ |
+| 107 | Mover imports lazy a tope de módulo (admin.py, admin_base.py, password.py) | ✅ |
+| 108 | Reemplazar 13 onclick inline por data-action + event delegation en dashboard.js | ✅ |
+| 109 | Fix bare catch sin logging en cart.js (console.warn) | ✅ |
+| 110 | Extraer clases CSS duplicadas: form-input, stat-card, stat-value, stat-label, checkbox-custom | ✅ |
+| 111 | Dividir renderMenu() 220 líneas → renderStoreDetails, renderClosedBanner, renderProductCard, renderCategorySection | ✅ |
+| 112 | Dividir renderCartItems() 82 líneas → renderCartItemRow, updateWhatsAppButton | ✅ |
+| 113 | Dividir renderDeliveryToggle() 80 líneas → renderDeliveryButtons, renderDeliveryFields | ✅ |
+| 114 | Refactor update_settings con helpers: _validate_basic_fields, _validate_settings_visuals, _handle_password_change | ✅ |
+| 115 | Health endpoint migrado de SessionLocal() a Depends(get_db) | ✅ |
+| 116 | Código 100% comentado en español (backend Python, frontend JS, templates HTML) | ✅ |
+| 117 | CSP: eliminado script inline de dashboard.html + todos los onclick → más cerca de quitar unsafe-inline | ✅ |
+| 118 | 62 tests pasando después de todos los refactors | ✅ |
+
+---
+
+**Resumen:** 94 completadas · 12 pendientes · 1 eliminada
+
+Última actualización: 13/07/2026
