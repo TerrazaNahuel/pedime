@@ -222,7 +222,7 @@
                     window.addVariant();
                     break;
                 case 'start-payment':
-                    window.startPayment(btn.getAttribute('data-plan'));
+                    window.startPayment(btn.getAttribute('data-plan'), e);
                     break;
                 case 'show-qr':
                     window.showQR();
@@ -357,8 +357,8 @@
     });
 
     /** Inicia el flujo de pago con Mercado Pago: crea una preferencia y redirige al checkout. */
-    window.startPayment = async function(plan) {
-        var btn = event.target;
+    window.startPayment = async function(plan, evt) {
+        var btn = evt.currentTarget;
         btn.disabled = true;
         btn.textContent = "Procesando...";
         var csrfEl = document.querySelector('input[name="csrf_token"]');

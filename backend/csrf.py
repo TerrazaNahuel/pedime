@@ -6,10 +6,13 @@ formulario HTML. En cada POST valida que el token del formulario coincida
 con el de la cookie.
 """
 
+import logging
 import os
 import secrets
 
 from fastapi import HTTPException, Request
+
+logger = logging.getLogger("pedime.csrf")
 
 # secure=True solo en producción (cuando ENVIRONMENT=production).
 # En local HTTP sin HTTPS, secure=False para evitar problemas de cookie.
@@ -53,4 +56,5 @@ def validate_csrf(request: Request, csrf_token: str):
     """
     cookie_token = request.cookies.get("csrf_token")
     if not cookie_token or not csrf_token or cookie_token != csrf_token:
+        logger.warning("CSRF validation failed for %s %s (cookie=%s form=%s)", request.method, request.url.path, bool(cookie_token), bool(csrf_token))
         raise HTTPException(status_code=403, detail="CSRF token inválido")

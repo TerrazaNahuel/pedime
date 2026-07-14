@@ -11,8 +11,7 @@ from decimal import Decimal
 from database import SessionLocal
 from models import Category, Product, Store
 from passlib.hash import bcrypt
-
-from backend.settings import DEMO_PASSWORD
+from settings import DEMO_PASSWORD
 
 logger = logging.getLogger("pedime.seed")
 

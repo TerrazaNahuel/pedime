@@ -8,7 +8,6 @@ reordenar (drag & drop), exportar e importar CSV.
 import csv
 import io
 import json
-import re
 import urllib.parse
 from decimal import Decimal
 
@@ -26,17 +25,11 @@ from routers.admin_base import (
 )
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
+from validators import validate_url
 
 from backend.settings import MAX_FILE_SIZE, MAX_REORDER_IDS, MAX_VARIANTS
 
 router = APIRouter()
-
-URL_PATTERN = re.compile(r"^https?://\S+$")
-
-
-def validate_url(url: str) -> bool:
-    """Valida que una URL sea HTTP(S) válida o esté vacía. Rechaza javascript:, data:, etc."""
-    return not url or bool(URL_PATTERN.match(url))
 
 
 def _validate_product_fields(name: str, description: str, price: Decimal, stock: int, image_url: str, available: str, category_id: int, store, db) -> str | None:
@@ -49,10 +42,9 @@ def _validate_product_fields(name: str, description: str, price: Decimal, stock:
         return "El precio no puede ser negativo"
     if stock < 0:
         return "El stock no puede ser negativo"
-    if not validate_url(image_url):
-        return "La URL de la imagen no es válida"
-    if len(image_url) > 500:
-        return "La URL de la imagen es demasiado larga"
+    url_err = validate_url(image_url, "La URL de la imagen")
+    if url_err is not None:
+        return url_err
     if available not in ("0", "1"):
         return "Valor de disponibilidad inválido"
     cat = db.query(Category).filter(Category.id == category_id, Category.store_id == store.id).first()

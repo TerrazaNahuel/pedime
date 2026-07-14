@@ -6,16 +6,15 @@ métodos de pago, personalización visual y horarios.
 """
 
 import re
-import secrets
 from decimal import Decimal
 
-from csrf import COOKIE_CONFIG, validate_csrf
+from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
-from models import Category, Product, Store
+from models import Store
 from passlib.hash import bcrypt
 from ratelimit import RateLimiter
-from routers.admin_base import get_authenticated_store, logger, render_dashboard_html, templates
+from routers.admin_base import get_authenticated_store, logger, render_dashboard_html
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from validators import validate_email, validate_name, validate_password_match, validate_url, validate_whatsapp
@@ -53,17 +52,7 @@ def     update_settings(
     store = get_authenticated_store(request, db)
 
     def render_with(msg=None, err=None):
-        if request.headers.get("HX-Request"):
-            return render_dashboard_html(request, store, db, msg=msg or "", err=err or "", tab="config")
-        token = secrets.token_hex(32)
-        resp = templates.TemplateResponse(request, "dashboard.html", {
-            "store": store,
-            "categories": db.query(Category).filter(Category.store_id == store.id).all(),
-            "products": db.query(Product).filter(Product.store_id == store.id).order_by(Product.sort_order, Product.id).all(),
-            "csrf_token": token, "success": msg, "error": err,
-        })
-        resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-        return resp
+        return render_dashboard_html(request, store, db, msg=msg or "", err=err or "", tab="config")
 
     if delivery_price < 0:
         return render_with(err="El costo de envío no puede ser negativo")

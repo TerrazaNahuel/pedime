@@ -19,7 +19,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 # ──────────────────────────────────────────────────
 
 if DATABASE_URL:
-    # PostgreSQL (Render/Railway) o SQLite en tests
     from sqlalchemy.pool import StaticPool
     url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1) if DATABASE_URL.startswith("postgresql") else DATABASE_URL
     engine_kwargs = {}
@@ -27,6 +26,10 @@ if DATABASE_URL:
         engine_kwargs["connect_args"] = {"check_same_thread": False}
         if url == "sqlite://":
             engine_kwargs["poolclass"] = StaticPool
+    else:
+        engine_kwargs["pool_size"] = 5
+        engine_kwargs["max_overflow"] = 10
+        engine_kwargs["pool_recycle"] = 3600
     engine = create_engine(url, **engine_kwargs)
 else:
     # SQLite local (desarrollo)

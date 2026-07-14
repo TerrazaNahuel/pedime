@@ -61,6 +61,16 @@ def _verify_mp_signature(request: Request, payment_id: str) -> bool:
     return hmac.compare_digest(expected, x_signature)
 
 
+def _activate_premium(tx: PaymentTransaction, store: Store, payment_id: str, db: Session) -> None:
+    """Activa el plan premium en el store y marca la transacción como aprobada."""
+    tx.status = "approved"
+    tx.mp_payment_id = str(payment_id) if payment_id else tx.mp_payment_id
+    tx.approved_at = datetime.now(UTC)
+    store.plan = tx.plan_type
+    store.plan_expires_at = tx.expires_at
+    db.commit()
+
+
 @router.post("/api/payments/create-preference")
 def create_preference(payload: CreatePreferencePayload, request: Request, db: Session = Depends(get_db)):
     """Crea una preferencia de pago en Mercado Pago y retorna el init_point."""
@@ -171,17 +181,9 @@ async def payment_webhook(request: Request, db: Session = Depends(get_db)):
             logger.warning("MP webhook: transacción no encontrada preference=%s store=%s", preference_id, store_id)
             return JSONResponse({"ok": True})
 
-        # Marca la transacción como aprobada y activa Premium en el store
-        tx.status = "approved"
-        tx.mp_payment_id = str(payment_id)
-        tx.approved_at = datetime.now(UTC)
-        db.commit()
-
         store = db.query(Store).filter(Store.id == store_id).first()
         if store:
-            store.plan = tx.plan_type
-            store.plan_expires_at = tx.expires_at
-            db.commit()
+            _activate_premium(tx, store, payment_id, db)
             admin_logger.info("Store %s activado %s vía MP (payment=%s)", store_id, tx.plan_type, payment_id)
 
         logger.info("Pago MP aprobado: store=%s payment=%s", store_id, payment_id)
@@ -206,12 +208,7 @@ def payment_success(request: Request, db: Session = Depends(get_db)):
                 PaymentTransaction.store_id == store_id,
             ).first()
             if tx and tx.status == "pending":
-                tx.status = "approved"
-                tx.mp_payment_id = str(payment_id) if payment_id else tx.mp_payment_id
-                tx.approved_at = datetime.now(UTC)
-                store.plan = tx.plan_type
-                store.plan_expires_at = tx.expires_at
-                db.commit()
+                _activate_premium(tx, store, payment_id or "", db)
                 admin_logger.info("Store %s activado %s vía success callback", store_id, tx.plan_type)
             plan_nombre = {"vip_basico": "VIP Básico", "vip_premium": "VIP Premium"}.get(store.plan, "VIP")
 

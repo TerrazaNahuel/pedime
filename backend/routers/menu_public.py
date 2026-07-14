@@ -65,19 +65,20 @@ def get_menu(slug: str, db: Session = Depends(get_db)):
     # Carga todas las categorías del store
     categories = {c.id: c for c in db.query(Category).filter(Category.store_id == store.id).all()}
 
-    # Carga solo productos disponibles
+    # Carga solo productos disponibles, ordenados: destacados primero, luego sort_order
     products = (
         db.query(Product)
         .filter(
             Product.store_id == store.id,
             Product.available,
         )
+        .order_by(Product.featured.desc(), Product.sort_order, Product.id)
         .all()
     )
 
-    # Agrupa productos por categoría (featured primero, luego sort_order)
+    # Agrupa productos por categoría
     products_by_category = {}
-    for p in sorted(products, key=lambda x: (not x.featured, x.sort_order)):
+    for p in products:
         products_by_category.setdefault(p.category_id, []).append(
             ProductOut(
                 id=p.id,

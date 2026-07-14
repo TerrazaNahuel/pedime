@@ -59,12 +59,14 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
     if store.plan == "premium":
         store.plan = "vip_basico"
         db.commit()
+        logger.info("Plan migrado: store_id=%s premium -> vip_basico", store.id)
     # Verificar expiración de planes VIP
     if store.plan in ("vip_basico", "vip_premium") and store.plan_expires_at:
         if datetime.now(UTC).date() > store.plan_expires_at.date():
             store.plan = "free"
             store.plan_expires_at = None
             db.commit()
+            logger.info("Plan expirado: store_id=%s vuelve a free", store.id)
     return store
 
 
