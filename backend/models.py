@@ -42,6 +42,9 @@ class Store(Base):
 
     categories = relationship("Category", back_populates="store", cascade="all, delete-orphan")
     products = relationship("Product", back_populates="store", cascade="all, delete-orphan")
+    page_views = relationship("PageView", back_populates="store", cascade="all, delete-orphan")
+    whatsapp_clicks = relationship("WhatsAppClick", back_populates="store", cascade="all, delete-orphan")
+    payment_transactions = relationship("PaymentTransaction", back_populates="store", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -52,7 +55,7 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     image_url = Column(String(500), default="")  # URL de imagen de la categoría (VIP+)
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)  # Relación M:1 con stores
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)  # Relación M:1 con stores
 
     store = relationship("Store", back_populates="categories")
     products = relationship("Product", back_populates="category", cascade="all, delete-orphan")
@@ -70,11 +73,11 @@ class Product(Base):
     available = Column(Boolean, default=True)  # Visible/disponible para la venta
     stock = Column(Integer, default=0)  # Stock disponible (0 = sin límite)
     image_url = Column(String(500), default="")
-    sort_order = Column(Integer, default=0)  # Orden personalizado por drag & drop
+    sort_order = Column(Integer, default=0, index=True)  # Orden personalizado por drag & drop
     featured = Column(Boolean, default=False)  # Producto destacado (aparece primero)
     variants = Column(Text, default="")  # JSON con variantes: [{"name":"Doble","price":150}]
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)  # Relación M:1 con categories
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)  # Relación M:1 con stores
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)  # Relación M:1 con categories
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)  # Relación M:1 con stores
 
     category = relationship("Category", back_populates="products")
     store = relationship("Store", back_populates="products")
@@ -89,6 +92,8 @@ class PageView(Base):
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
     viewed_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
+    store = relationship("Store", back_populates="page_views")
+
 
 class WhatsAppClick(Base):
     """Click en el botón de WhatsApp para enviar un pedido."""
@@ -101,6 +106,8 @@ class WhatsAppClick(Base):
     cart_value = Column(Numeric(10, 2), default=0)
     item_count = Column(Integer, default=0)
     payment_method = Column(String(20), default="")
+
+    store = relationship("Store", back_populates="whatsapp_clicks")
 
 
 class RateLimitEntry(Base):
@@ -120,12 +127,14 @@ class PaymentTransaction(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
-    mp_preference_id = Column(String(100), unique=True, nullable=True)  # ID de preferencia de Mercado Pago
-    mp_payment_id = Column(String(100), unique=True, nullable=True)  # ID del pago en Mercado Pago
-    status = Column(String(20), default="pending")  # pending | approved | rejected | refunded
-    amount = Column(Numeric(10, 2), nullable=False)  # Monto cobrado en ARS
-    plan_type = Column(String(20), default="premium")  # Tipo de plan adquirido
+    mp_preference_id = Column(String(100), unique=True, nullable=True)
+    mp_payment_id = Column(String(100), unique=True, nullable=True)
+    status = Column(String(20), default="pending")
+    amount = Column(Numeric(10, 2), nullable=False)
+    plan_type = Column(String(20), default="premium")
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    approved_at = Column(DateTime, nullable=True)  # Fecha de aprobación del pago
-    expires_at = Column(DateTime, nullable=True)  # Fecha de vencimiento del plan
-    metadata_json = Column(Text, default="")  # Datos adicionales en formato JSON
+    approved_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    metadata_json = Column(Text, default="")
+
+    store = relationship("Store", back_populates="payment_transactions")

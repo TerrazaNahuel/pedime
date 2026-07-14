@@ -4,10 +4,13 @@ Endpoints de pago con Mercado Pago para suscripciones Premium.
 Usa el SDK oficial de Mercado Pago. Requiere MP_ACCESS_TOKEN en .env.
 """
 
+import hashlib
+import hmac
 import logging
 from datetime import UTC, datetime, timedelta
 
 import mercadopago
+from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -19,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from backend.settings import (
     MP_ACCESS_TOKEN,
+    MP_WEBHOOK_SECRET,
     PREMIUM_DURATION_DAYS,
     SITE_URL,
     VIP_BASICO_PRICE,
@@ -36,12 +40,32 @@ PLAN_INFO = {
 
 class CreatePreferencePayload(BaseModel):
     plan: str  # "vip_basico" | "vip_premium"
+    csrf_token: str = ""
+
+
+def _verify_mp_signature(request: Request, payment_id: str) -> bool:
+    """Verifica la firma HMAC-SHA256 del webhook de Mercado Pago."""
+    if not MP_WEBHOOK_SECRET:
+        admin_logger.warning("MP_WEBHOOK_SECRET no configurado, webhook sin verificar")
+        return True
+    x_signature = request.headers.get("x-signature", "")
+    x_request_id = request.headers.get("x-request-id", "")
+    if not x_signature or not x_request_id:
+        admin_logger.warning("MP webhook: headers x-signature/x-request-id faltantes")
+        return False
+    expected = hmac.new(
+        MP_WEBHOOK_SECRET.encode(),
+        f"id:{payment_id}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, x_signature)
 
 
 @router.post("/api/payments/create-preference")
 def create_preference(payload: CreatePreferencePayload, request: Request, db: Session = Depends(get_db)):
     """Crea una preferencia de pago en Mercado Pago y retorna el init_point."""
     store = get_authenticated_store(request, db)
+    validate_csrf(request, payload.csrf_token)
 
     if not MP_ACCESS_TOKEN:
         return JSONResponse({"ok": False, "error": "Mercado Pago no está configurado."}, status_code=503)
@@ -98,6 +122,10 @@ async def payment_webhook(request: Request, db: Session = Depends(get_db)):
     topic = request.query_params.get("topic") or request.query_params.get("type")
 
     logger.info("Webhook MP recibido: topic=%s body=%s", topic, body)
+
+    if not _verify_mp_signature(request, body.get("data", {}).get("id", "")):
+        admin_logger.warning("MP webhook: firma inválida o faltante")
+        return JSONResponse({"ok": False, "error": "Firma inválida"}, status_code=403)
 
     if topic == "payment":
         # El ID puede venir en el body (topic=payment) o en query params (topic=merchant_order)

@@ -362,11 +362,13 @@
         var btn = event.target;
         btn.disabled = true;
         btn.textContent = "Procesando...";
+        var csrfEl = document.querySelector('input[name="csrf_token"]');
+        var csrf = csrfEl ? csrfEl.value : "";
         try {
             var res = await fetch("/api/payments/create-preference", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ plan: plan }),
+                body: JSON.stringify({ plan: plan, csrf_token: csrf }),
             });
             var data = await res.json();
             if (data.ok && data.init_point) {
