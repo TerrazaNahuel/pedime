@@ -28,7 +28,7 @@ rate_limiter = RateLimiter()
 
 
 @router.post("/admin/settings")
-def     update_settings(
+def update_settings(
     request: Request,
     name: str = Form(...),
     whatsapp: str = Form(...),

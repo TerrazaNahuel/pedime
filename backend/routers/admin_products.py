@@ -178,7 +178,7 @@ def duplicate_product(product_id: int, request: Request, csrf_token: str = Form(
     limit_err = check_plan_limit(store, db, category_id=original.category_id)
     if limit_err:
         return admin_error_response(request, store, db, limit_err)
-    dup_name = original.name[:92] + " (copia)"
+    dup_name = original.name[:max(0, 100 - len(" (copia)"))] + " (copia)"
     min_sort = db.query(db_func.min(Product.sort_order)).filter(Product.store_id == store.id).scalar() or 0
     dup = Product(
         name=dup_name,
@@ -347,7 +347,10 @@ def import_products_csv(
             errors.append(f"Fila {row_num}: nombre demasiado largo")
             continue
 
-        description = row.get("description", "").strip()[:500]
+        description = row.get("description", "").strip()
+        if len(description) > 500:
+            errors.append(f"Fila {row_num}: descripción demasiado larga")
+            continue
         image_url = row.get("image_url", "").strip()[:500]
 
         try:

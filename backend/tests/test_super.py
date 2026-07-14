@@ -69,7 +69,7 @@ class TestSuperDashboard:
         """Store no superadmin debe ser redirigido."""
         csrf, _ = _csrf(client, "/login")
         client.post("/login", data={
-            "email": "test@test.com", "password": "Test1234", "csrf_token": csrf,
+            "email": "test@test.com", "password": "Test1234!", "csrf_token": csrf,
         }, follow_redirects=False)
         resp = client.get("/admin/super", follow_redirects=False)
         assert resp.status_code == 302
@@ -169,11 +169,26 @@ class TestSuperActions:
         assert "err" in resp.headers.get("location", "")
 
     def test_delete_superadmin_blocked(self, client, super_store, db):
-        """Eliminar un superadmin debe ser rechazado."""
+        """Eliminar el único superadmin debe ser rechazado."""
         from models import Store
         csrf = _login(client)
-        # Crear otro superadmin
+        # Quitar superadmin al otro store para que solo quede 1
+        other = db.query(Store).filter(Store.slug == "extra-store").first()
+        if other:
+            other.is_superadmin = False
+            db.commit()
+
+        resp = client.post(f"/admin/super/{super_store.id}/delete", data={
+            "csrf_token": csrf,
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+        assert "err" in resp.headers.get("location", "")
+
+    def test_delete_superadmin_allowed_with_multiple(self, client, super_store, db):
+        """Eliminar un superadmin debe ser permitido si hay otro."""
+        from models import Store
         from passlib.hash import bcrypt
+        csrf = _login(client)
         other = Store(
             name="Other Super", slug="other-super", email="other@test.com",
             whatsapp="5491134567892", password_hash=bcrypt.hash("Other1234!"),
@@ -187,7 +202,7 @@ class TestSuperActions:
             "csrf_token": csrf,
         }, follow_redirects=False)
         assert resp.status_code == 302
-        assert "err" in resp.headers.get("location", "")
+        assert "/admin/super" == resp.headers.get("location", "")
 
     def test_reset_password(self, client, super_store, db):
         """Reset password debe mostrar la nueva contraseña."""

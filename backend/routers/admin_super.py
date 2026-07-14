@@ -211,7 +211,9 @@ def delete_store(
     if target.id == request.session.get("store_id"):
         return RedirectResponse(url="/admin/super?err=No+podes+eliminarte+a+vos+mismo", status_code=302)
     if target.is_superadmin:
-        return RedirectResponse(url="/admin/super?err=No+podes+eliminar+un+superadmin", status_code=302)
+        superadmin_count = db.query(Store).filter(Store.is_superadmin).count()
+        if superadmin_count <= 1:
+            return RedirectResponse(url="/admin/super?err=Debe+haber+al+menos+un+superadmin", status_code=302)
     logger.info("Super admin deleted store_id=%s", store_id)
     db.delete(target)
     db.commit()
