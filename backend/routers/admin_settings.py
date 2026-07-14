@@ -69,11 +69,14 @@ def     update_settings(
     if delivery_price > 999_999.99:
         return render_with(err="El costo de envío es demasiado alto")
     err = _validate_basic_fields(name, whatsapp, email, db, store)
-    if err: return render_with(err=err)
+    if err:
+        return render_with(err=err)
     err = _validate_settings_visuals(primary_color, logo_url, opening_time, closing_time, working_days)
-    if err: return render_with(err=err)
+    if err:
+        return render_with(err=err)
     err = _handle_password_change(store, current_password, new_password, confirm_new_password)
-    if err: return render_with(err=err)
+    if err:
+        return render_with(err=err)
 
     store.name = name
     store.whatsapp = re.sub(r"\D", "", whatsapp)
@@ -120,10 +123,10 @@ def _validate_settings_visuals(primary_color: str, logo_url: str, opening_time: 
         return "La URL del logo no es válida"
     if len(logo_url) > 500:
         return "La URL del logo es demasiado larga (máx. 500 caracteres)"
-    TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
-    if opening_time and not TIME_RE.match(opening_time):
+    time_re = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+    if opening_time and not time_re.match(opening_time):
         return "El horario de apertura debe tener formato HH:MM (ej: 09:00)"
-    if closing_time and not TIME_RE.match(closing_time):
+    if closing_time and not time_re.match(closing_time):
         return "El horario de cierre debe tener formato HH:MM (ej: 18:00)"
     if (opening_time and not closing_time) or (closing_time and not opening_time):
         return "Si configurás horario, completá apertura y cierre"

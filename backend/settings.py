@@ -5,9 +5,10 @@ Todas las variables de entorno se leen y proveen con defaults aquí.
 
 import os
 
-# ── Límites del plan free ──────────────────────────
-MAX_PRODUCTS_PER_CATEGORY = int(os.getenv("MAX_PRODUCTS_PER_CATEGORY", "10"))
-MAX_CATEGORIES = int(os.getenv("MAX_CATEGORIES", "5"))
+# ── Límites de planes ──────────────────────────
+MAX_PRODUCTS_PER_CATEGORY = int(os.getenv("MAX_PRODUCTS_PER_CATEGORY", "10"))  # Free: máx por categoría
+MAX_CATEGORIES_FREE = int(os.getenv("MAX_CATEGORIES_FREE", "5"))  # Free: máx categorías
+MAX_CATEGORIES_VIP = int(os.getenv("MAX_CATEGORIES_VIP", "15"))  # VIP Básico: máx categorías
 MAX_REORDER_IDS = int(os.getenv("MAX_REORDER_IDS", "500"))
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE_MB", "10")) * 1024 * 1024
 MAX_VARIANTS = int(os.getenv("MAX_VARIANTS", "10"))
@@ -31,9 +32,9 @@ MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")  # Token de acceso para API d
 
 MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "")  # Secreto para validar webhooks de MP
 
-# ── Precios premium (en ARS) ───────────────────────
-PREMIUM_PRICE_MONTHLY = int(os.getenv("PREMIUM_PRICE_MONTHLY", "12000"))
-PREMIUM_PRICE_YEARLY = int(os.getenv("PREMIUM_PRICE_YEARLY", "90000"))
+# ── Precios de planes VIP (en ARS) ─────────────
+VIP_BASICO_PRICE = int(os.getenv("VIP_BASICO_PRICE", "12999"))
+VIP_PREMIUM_PRICE = int(os.getenv("VIP_PREMIUM_PRICE", "30000"))
 PREMIUM_DURATION_DAYS = int(os.getenv("PREMIUM_DURATION_DAYS", "30"))
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
 

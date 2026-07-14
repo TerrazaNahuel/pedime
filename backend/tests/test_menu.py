@@ -35,7 +35,7 @@ def test_api_menu_200(client, seed_store):
     data = resp.json()
     assert data["store_name"] == "Test Store"
     assert data["store_slug"] == "test-store"
-    assert data["delivery_available"] == True
+    assert data["delivery_available"]
 
 
 def test_login_returns_page(client):

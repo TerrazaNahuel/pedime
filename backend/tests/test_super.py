@@ -36,7 +36,7 @@ def super_store(db):
         whatsapp="5491134567890",
         password_hash=bcrypt.hash("Super1234!"),
         is_superadmin=True,
-        plan="premium",
+        plan="vip_basico",
     )
     db.add(store)
     db.commit()
@@ -60,7 +60,7 @@ def super_store(db):
 class TestSuperDashboard:
     def test_super_dashboard_accessible(self, client, super_store):
         """Super admin debe poder acceder al panel super."""
-        csrf = _login(client)
+        _login(client)
         resp = client.get("/admin/super", follow_redirects=True)
         assert resp.status_code == 200
         assert "Super Admin" in resp.text or "super" in resp.text.lower()
@@ -94,19 +94,19 @@ class TestSuperActions:
         db.refresh(target)
         assert target.is_active != old_active
 
-    def test_set_plan_free(self, client, super_store, db):
+    def test_set_plan_vip_basico(self, client, super_store, db):
         """Set plan debe cambiar el plan del store."""
         from models import Store
         csrf = _login(client)
         target = db.query(Store).filter(Store.slug == "extra-store").first()
 
         resp = client.post(f"/admin/super/{target.id}/set-plan", data={
-            "plan": "premium", "csrf_token": csrf,
+            "plan": "vip_basico", "csrf_token": csrf,
         }, follow_redirects=False)
         assert resp.status_code == 302
 
         db.refresh(target)
-        assert target.plan == "premium"
+        assert target.plan == "vip_basico"
 
     def test_set_plan_invalid(self, client, super_store, db):
         """Plan inválido debe mostrar error."""
@@ -177,7 +177,7 @@ class TestSuperActions:
         other = Store(
             name="Other Super", slug="other-super", email="other@test.com",
             whatsapp="5491134567892", password_hash=bcrypt.hash("Other1234!"),
-            is_superadmin=True, plan="premium",
+            is_superadmin=True, plan="vip_basico",
         )
         db.add(other)
         db.commit()

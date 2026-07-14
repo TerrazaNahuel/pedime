@@ -8,6 +8,8 @@
 {% block extra_head %}
 <!-- SortableJS para drag & drop de productos -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" crossorigin="anonymous"></script>
+<!-- QRCode.js para generar códigos QR -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 {% endblock %}
 {% block content %}
 {# Contenedor principal reemplazado por HTMX en cada acción #}
@@ -18,10 +20,12 @@
             {# Nombre del store con badge de plan #}
             <h1 class="text-xl font-bold">
                 {{ store.name }}
-                {% if store.plan == 'premium' %}
-                    <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full ml-2">Premium</span>
+                {% if store.plan == 'vip_premium' %}
+                    <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full ml-2">VIP Premium</span>
+                {% elif store.plan == 'vip_basico' %}
+                    <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full ml-2">VIP Básico</span>
                 {% else %}
-                    <span class="text-xs bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded-full ml-2">Free</span>
+                    <span class="text-xs bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded-full ml-2">Gratis</span>
                 {% endif %}
             </h1>
             {# Link público al menú del store #}
@@ -30,6 +34,7 @@
                 <a href="/menu/{{ store.slug }}" target="_blank" class="text-emerald-400 hover:text-emerald-300">
                     {{ base_url }}menu/{{ store.slug }}
                 </a>
+                <button data-action="show-qr" class="text-xs text-gray-500 hover:text-emerald-400 ml-2 transition" title="Ver código QR">📱 QR</button>
             </p>
         </div>
         <div class="flex items-center gap-3">
@@ -53,12 +58,12 @@
         <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">{{ error }}</div>
     {% endif %}
 
-    {# Banner de upgrade a Premium para usuarios free #}
+    {# Banner de upgrade a plan VIP para usuarios free #}
     {% if store.plan == 'free' %}
     <div class="bg-gradient-to-r from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
         <div>
-            <p class="text-sm font-medium text-purple-300">✨ Upgrade a Premium</p>
-            <p class="text-xs text-gray-500">Sin límites: productos ilimitados, más categorías, y estadísticas detalladas.</p>
+            <p class="text-sm font-medium text-purple-300">✨ Upgrade a plan VIP</p>
+            <p class="text-xs text-gray-500">Más categorías, productos sin límite, fotos, variantes y mucho más.</p>
         </div>
         <a href="/admin/stats#premium" class="text-sm bg-purple-500 hover:bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg transition shrink-0">Ver planes</a>
     </div>
@@ -126,6 +131,10 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
                                 <h3 class="font-semibold">{{ prod.name }}</h3>
+                                {# Estrella de destacado #}
+                                {% if prod.featured %}
+                                    <span class="text-xs text-amber-400">⭐</span>
+                                {% endif %}
                                 {# Badge "Oculto" si el producto no está disponible #}
                                 {% if not prod.available %}
                                     <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Oculto</span>
@@ -139,6 +148,11 @@
                         </div>
                         {# Acciones del producto #}
                         <div class="flex items-center gap-2 shrink-0">
+                            <!-- Toggle destacado -->
+                            <form hx-post="/admin/product/{{ prod.id }}/toggle-featured" hx-target="#admin-content" hx-swap="innerHTML">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="text-sm {{ 'text-amber-400' if prod.featured else 'text-gray-600' }} hover:text-amber-400 transition px-2 py-1" title="Destacar/Quitar destacado">⭐</button>
+                            </form>
                             <!-- Toggle visibilidad -->
                             <form hx-post="/admin/product/{{ prod.id }}/toggle" hx-target="#admin-content" hx-swap="innerHTML">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -151,7 +165,7 @@
                                 </button>
                             </form>
                             <!-- Editar (abre modal) -->
-                            <button data-edit-id="{{ prod.id }}" data-edit-name="{{ prod.name|e }}" data-edit-description="{{ prod.description|e }}" data-edit-price="{{ prod.price }}" data-edit-category="{{ prod.category_id }}" data-edit-available="{{ "true" if prod.available else "false" }}" data-edit-image="{{ prod.image_url|e }}" data-edit-stock="{{ prod.stock or 0 }}" data-edit-variants="{{ prod.variants|e }}" class="edit-btn text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
+                            <button data-edit-id="{{ prod.id }}" data-edit-name="{{ prod.name|e }}" data-edit-description="{{ prod.description|e }}" data-edit-price="{{ prod.price }}" data-edit-category="{{ prod.category_id }}" data-edit-available="{{ "true" if prod.available else "false" }}" data-edit-image="{{ prod.image_url|e }}" data-edit-stock="{{ prod.stock or 0 }}" data-edit-variants="{{ prod.variants|e }}" data-edit-featured="{{ "true" if prod.featured else "false" }}" class="edit-btn text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
                             <!-- Duplicar -->
                             <form hx-post="/admin/product/{{ prod.id }}/duplicate" hx-target="#admin-content" hx-swap="innerHTML" style="display:inline" data-category-id="{{ prod.category_id }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -199,8 +213,16 @@
                 <div class="flex-1">
                     <form id="cat-form-{{ cat.id }}" hx-post="/admin/category/{{ cat.id }}/edit" hx-target="#admin-content" hx-swap="innerHTML" class="flex items-center gap-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <span id="cat-name-{{ cat.id }}" class="font-medium">{{ cat.name }}</span>
-                        <input id="cat-input-{{ cat.id }}" type="text" name="name" value="{{ cat.name }}" class="hidden bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500">
+                        <span id="cat-name-{{ cat.id }}" class="font-medium">
+                            {% if cat.image_url %}
+                                <img src="{{ cat.image_url }}" class="w-6 h-6 rounded object-cover inline-block mr-1">
+                            {% endif %}
+                            {{ cat.name }}
+                        </span>
+                        <div class="hidden" id="cat-edit-group-{{ cat.id }}">
+                            <input id="cat-input-{{ cat.id }}" type="text" name="name" value="{{ cat.name }}" class="bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500">
+                            <input id="cat-image-{{ cat.id }}" type="url" name="image_url" value="{{ cat.image_url or '' }}" placeholder="URL imagen (opcional)" class="bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 mt-1 w-full">
+                        </div>
                     </form>
                 </div>
                 {# Acciones: editar inline, guardar, cancelar, eliminar #}
@@ -401,12 +423,19 @@
                        class="input-field">
             </div>
 
-            {# Campo: URL de imagen opcional #}
+                {# Campo: URL de imagen opcional #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">URL de imagen (opcional)</label>
                 <input type="url" name="image_url" id="product-image"
                        placeholder="https://ejemplo.com/foto.jpg"
                        class="input-field">
+            </div>
+            {# Checkbox: producto destacado #}
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="featured" value="0">
+                <input type="checkbox" name="featured" id="product-featured" value="1"
+                       class="checkbox-custom">
+                <label for="product-featured" class="text-sm text-amber-400">⭐ Destacado (aparece primero)</label>
             </div>
 
             {# Campos: precio y categoría en fila #}
@@ -434,12 +463,20 @@
                        class="input-field">
             </div>
 
-            {# Checkbox: disponible/oculto #}
-            <div class="flex items-center gap-2">
-                <input type="hidden" name="available" value="0">
-                <input type="checkbox" name="available" id="product-available" value="1" checked
-                       class="checkbox-custom">
-                <label for="product-available" class="text-sm text-gray-400">Disponible</label>
+            {# Checkboxes #}
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="available" value="0">
+                    <input type="checkbox" name="available" id="product-available" value="1" checked
+                           class="checkbox-custom">
+                    <label for="product-available" class="text-sm text-gray-400">Disponible</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="featured" value="0">
+                    <input type="checkbox" name="featured" id="product-featured" value="1"
+                           class="checkbox-custom">
+                    <label for="product-featured" class="text-sm text-gray-400">⭐ Destacado</label>
+                </div>
             </div>
 
             {# Sección de variantes (solo Premium) #}
@@ -466,6 +503,21 @@
 
 </div>
 
+{# ── Modal QR ── #}
+<div id="qr-modal" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 text-center max-w-sm w-full">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold">📱 Menú QR</h2>
+            <button data-action="close-qr" class="text-gray-400 hover:text-white p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <p class="text-sm text-gray-400 mb-4">Escaneá para ver el menú</p>
+        <div id="qrcode" class="flex justify-center mb-4"></div>
+        <a id="qr-download-btn" href="#" download="menu-qr.png" class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">Descargar QR</a>
+    </div>
+</div>
+
 {# Script del dashboard: manejo de modales, tabs, drag & drop, etc. #}
-<script src="/static/js/dashboard.js?v=1"></script>
+<script src="/static/js/dashboard.js?v=2"></script>
 {% endblock %}

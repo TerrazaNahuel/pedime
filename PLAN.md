@@ -127,59 +127,62 @@
 
 ---
 
-## FASE 7 — Pagos y Facturación 🔨
+## FASE 7 — Planes y Facturación de Suscripciones VIP ✅
 
 | # | Feature | Estado |
 |---|---------|--------|
 | 81 | Integración con Mercado Pago (preferencias + webhook async + fix body parse) | ✅ |
-| 82 | QR para transferencia bancaria (CBU/alias) | ⏳ |
-| 83 | Factura electrónica / comprobante simple | ⏳ |
-| 84 | Cobro con tarjeta (Mercado Pago Checkout API) | ✅ |
+| 82 | ~~QR para transferencia bancaria (CBU/alias)~~ | ❌ eliminado |
+| 83 | 3 planes: Gratis ($0), VIP Básico ($12.999), VIP Premium ($30.000) | ✅ |
+| 84 | Límites por plan (categorías, productos, variantes, fotos) | ✅ |
+| 85 | UI de upgrade con cards comparativas en stats.html | ✅ |
+| 86 | Cobro con tarjeta (Mercado Pago Checkout API) | ✅ |
+| 87 | Facturación propia de suscripciones Premium (comprobantes) | ⏳ |
 
 ---
 
-## FASE 8 — Notificaciones y Comunicación ⏳
+## FASE 8 — Notificaciones y Comunicación (eliminada)
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 85 | Mensaje formateado a WhatsApp con resumen del pedido | ✅ |
-| 86 | Notificación al cliente cuando el pedido está listo | ⏳ |
-| 87 | Email de confirmación al cliente | ⏳ |
-| 88 | WhatsApp Business API (en vez de wa.me) | ⏳ |
-| 89 | Recordatorio automático de pedido pendiente | ⏳ |
+| 88 | Mensaje formateado a WhatsApp con resumen del pedido | ✅ |
+| 89 | ~~Notificación al cliente cuando el pedido está listo~~ | ❌ eliminado |
+| 90 | ~~Email de confirmación al cliente~~ | ❌ eliminado |
+| 91 | ~~WhatsApp Business API (en vez de wa.me)~~ | ❌ eliminado |
+| 92 | ~~Recordatorio automático de pedido pendiente~~ | ❌ eliminado |
 
 ---
 
-## FASE 9 — Multi-Tenant y Escalabilidad ⏳
+## FASE 9 — Multi-Tenant y Escalabilidad (eliminada)
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 90 | Registro de nuevo comercio (signup) | ✅ |
-| 91 | Login con sesión | ✅ |
-| 92 | Slug único por comercio (URL amigable) | ✅ |
-| 93 | Seed data inicial (comercio demo) | ✅ |
-| 94 | Soporte PostgreSQL (Railway) + SQLite (local) | ✅ |
-| 95 | Subdominio personalizado (micomida.pedime.app) | ⏳ |
-| 96 | Dominio personalizado (menu.micomida.com) | ⏳ |
-| 97 | Múltiples usuarios por comercio (roles) | ❌ eliminado |
+| 93 | Registro de nuevo comercio (signup) | ✅ |
+| 94 | Login con sesión | ✅ |
+| 95 | Slug único por comercio (URL amigable) | ✅ |
+| 96 | Seed data inicial (comercio demo) | ✅ |
+| 97 | Soporte PostgreSQL (Railway) + SQLite (local) | ✅ |
+| 98 | ~~Subdominio personalizado (micomida.pedime.app)~~ | ❌ eliminado |
+| 99 | ~~Dominio personalizado (menu.micomida.com)~~ | ❌ eliminado |
+| 100 | ~~Múltiples usuarios por comercio (roles)~~ | ❌ eliminado |
 
 ---
 
-## FASE 10 — Infraestructura y DevOps ⏳
+## FASE 10 — Infraestructura y DevOps 🔨
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 98 | Alembic para migraciones (ejecutadas al startup) | ✅ |
-| 99 | Logging estructurado (fecha, nivel, módulo) | ✅ |
-| 100 | Secret key desde variable de entorno | ✅ |
-| 101 | Docker / docker-compose para despliegue | ⏳ |
-| 102 | CI/CD (GitHub Actions) | ⏳ |
-| 103 | HTTPS (certbot / Caddy) | ⏳ |
-| 104 | Backup automático de base de datos | ⏳ |
+| 101 | Alembic para migraciones (ejecutadas al startup) | ✅ |
+| 102 | Logging estructurado (fecha, nivel, módulo) | ✅ |
+| 103 | Secret key desde variable de entorno | ✅ |
+| 104 | Docker / docker-compose para despliegue | ✅ |
+| 105 | CI/CD (GitHub Actions: lint + tests + deploy) | ✅ |
+| 106 | ~~HTTPS (certbot / Caddy)~~ — cubierto por Render | ✅ cubierto |
+| 107 | ~~Backup automático de base de datos~~ — cubierto por Render | ✅ cubierto |
 
 ---
 
-**Leyenda:** ✅ Completado | ⏳ Pendiente | 🔨 En progreso | ❌ Eliminado
+**Leyenda:** ✅ Completado | ⏳ Pendiente | 🔨 En progreso | ❌ Eliminado | ✅ cubierto = lo maneja la plataforma (Render)
 
 ---
 
@@ -187,23 +190,23 @@
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 105 | Webhook MP: eliminar imports muertos (hashlib/hmac), handler async con await request.json() | ✅ |
-| 106 | Eliminar settings no usados: MP_PUBLIC_KEY, LOGOUT_MAX_ATTEMPTS, LOGOUT_WINDOW_SECONDS | ✅ |
-| 107 | Mover imports lazy a tope de módulo (admin.py, admin_base.py, password.py) | ✅ |
-| 108 | Reemplazar 13 onclick inline por data-action + event delegation en dashboard.js | ✅ |
-| 109 | Fix bare catch sin logging en cart.js (console.warn) | ✅ |
-| 110 | Extraer clases CSS duplicadas: form-input, stat-card, stat-value, stat-label, checkbox-custom | ✅ |
-| 111 | Dividir renderMenu() 220 líneas → renderStoreDetails, renderClosedBanner, renderProductCard, renderCategorySection | ✅ |
-| 112 | Dividir renderCartItems() 82 líneas → renderCartItemRow, updateWhatsAppButton | ✅ |
-| 113 | Dividir renderDeliveryToggle() 80 líneas → renderDeliveryButtons, renderDeliveryFields | ✅ |
-| 114 | Refactor update_settings con helpers: _validate_basic_fields, _validate_settings_visuals, _handle_password_change | ✅ |
-| 115 | Health endpoint migrado de SessionLocal() a Depends(get_db) | ✅ |
-| 116 | Código 100% comentado en español (backend Python, frontend JS, templates HTML) | ✅ |
-| 117 | CSP: eliminado script inline de dashboard.html + todos los onclick → más cerca de quitar unsafe-inline | ✅ |
-| 118 | 62 tests pasando después de todos los refactors | ✅ |
+| 108 | Webhook MP: eliminar imports muertos (hashlib/hmac), handler async con await request.json() | ✅ |
+| 109 | Eliminar settings no usados: MP_PUBLIC_KEY, LOGOUT_MAX_ATTEMPTS, LOGOUT_WINDOW_SECONDS | ✅ |
+| 110 | Mover imports lazy a tope de módulo (admin.py, admin_base.py, password.py) | ✅ |
+| 111 | Reemplazar 13 onclick inline por data-action + event delegation en dashboard.js | ✅ |
+| 112 | Fix bare catch sin logging en cart.js (console.warn) | ✅ |
+| 113 | Extraer clases CSS duplicadas: form-input, stat-card, stat-value, stat-label, checkbox-custom | ✅ |
+| 114 | Dividir renderMenu() 220 líneas → renderStoreDetails, renderClosedBanner, renderProductCard, renderCategorySection | ✅ |
+| 115 | Dividir renderCartItems() 82 líneas → renderCartItemRow, updateWhatsAppButton | ✅ |
+| 116 | Dividir renderDeliveryToggle() 80 líneas → renderDeliveryButtons, renderDeliveryFields | ✅ |
+| 117 | Refactor update_settings con helpers: _validate_basic_fields, _validate_settings_visuals, _handle_password_change | ✅ |
+| 118 | Health endpoint migrado de SessionLocal() a Depends(get_db) | ✅ |
+| 119 | Código 100% comentado en español (backend Python, frontend JS, templates HTML) | ✅ |
+| 120 | CSP: eliminado script inline de dashboard.html + todos los onclick → más cerca de quitar unsafe-inline | ✅ |
+| 121 | 62 tests pasando después de todos los refactors | ✅ |
 
 ---
 
-**Resumen:** 94 completadas · 12 pendientes · 1 eliminada
+**Resumen:** 99 completadas · 1 pendiente · 8 eliminadas
 
-Última actualización: 13/07/2026
+Última actualización: 14/07/2026

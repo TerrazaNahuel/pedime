@@ -9,15 +9,16 @@ import logging
 import os
 import secrets
 import urllib.parse
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
+from csrf import COOKIE_CONFIG
 from fastapi import Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from models import Category, Product, Store
 from sqlalchemy.orm import Session
-from backend.settings import MAX_CATEGORIES, MAX_PRODUCTS_PER_CATEGORY, PREMIUM_DURATION_DAYS
-from csrf import COOKIE_CONFIG
+
+from backend.settings import MAX_CATEGORIES_FREE, MAX_CATEGORIES_VIP, MAX_PRODUCTS_PER_CATEGORY
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -54,8 +55,12 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
     store = db.query(Store).filter(Store.id == store_id).first()
     if not store or store.is_active is False:
         raise NotAuthenticatedException()
-    # Verificar expiración de premium
-    if store.plan == "premium" and store.plan_expires_at:
+    # Migrar plan legacy "premium" → "vip_basico"
+    if store.plan == "premium":
+        store.plan = "vip_basico"
+        db.commit()
+    # Verificar expiración de planes VIP
+    if store.plan in ("vip_basico", "vip_premium") and store.plan_expires_at:
         if datetime.now(UTC).date() > store.plan_expires_at.date():
             store.plan = "free"
             store.plan_expires_at = None
@@ -92,25 +97,34 @@ def admin_error_response(request: Request, store: Store, db: Session, msg: str, 
 
 def check_plan_limit(store: Store, db: Session, category_id: int | None = None, exclude_product_id: int | None = None) -> str | None:
     """
-    Verifica los límites del plan free (cantidad de categorías o productos por categoría).
+    Verifica los límites del plan (categorías o productos por categoría).
     Retorna un mensaje de error si se excede el límite, o None si está ok.
     Si category_id se pasa, verifica productos en esa categoría; si no, verifica categorías totales.
     exclude_product_id permite excluir un producto del conteo (útil al editar).
     """
-    if store.plan == "premium":
-        return None
+    if store.plan == "vip_premium":
+        return None  # Sin límites
     if category_id is not None:
-        q = db.query(Product).filter(
-            Product.category_id == category_id,
-            Product.store_id == store.id,
-        )
-        if exclude_product_id is not None:
-            q = q.filter(Product.id != exclude_product_id)
-        prod_count = q.count()
-        if prod_count >= MAX_PRODUCTS_PER_CATEGORY:
-            return f"Plan free: máximo {MAX_PRODUCTS_PER_CATEGORY} productos por categoría. Actualizá a premium."
+        # Verificar límite de productos por categoría
+        if store.plan == "free":
+            q = db.query(Product).filter(
+                Product.category_id == category_id,
+                Product.store_id == store.id,
+            )
+            if exclude_product_id is not None:
+                q = q.filter(Product.id != exclude_product_id)
+            prod_count = q.count()
+            if prod_count >= MAX_PRODUCTS_PER_CATEGORY:
+                return f"Plan free: máximo {MAX_PRODUCTS_PER_CATEGORY} productos por categoría. Actualizá a un plan VIP."
+        # VIP Básico y Premium: items sin límite por categoría
+        return None
     else:
+        # Verificar límite de categorías totales
         cat_count = db.query(Category).filter(Category.store_id == store.id).count()
-        if cat_count >= MAX_CATEGORIES:
-            return f"Plan free: máximo {MAX_CATEGORIES} categorías. Actualizá a premium."
+        if store.plan == "free":
+            if cat_count >= MAX_CATEGORIES_FREE:
+                return f"Plan free: máximo {MAX_CATEGORIES_FREE} categorías. Actualizá a un plan VIP."
+        elif store.plan == "vip_basico":
+            if cat_count >= MAX_CATEGORIES_VIP:
+                return f"Plan VIP Básico: máximo {MAX_CATEGORIES_VIP} categorías. Actualizá a VIP Premium."
     return None

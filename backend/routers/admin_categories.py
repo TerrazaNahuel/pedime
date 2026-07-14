@@ -9,7 +9,13 @@ from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from models import Category
-from routers.admin_base import admin_error_response, check_plan_limit, get_authenticated_store, logger, render_dashboard_html
+from routers.admin_base import (
+    admin_error_response,
+    check_plan_limit,
+    get_authenticated_store,
+    logger,
+    render_dashboard_html,
+)
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -40,8 +46,8 @@ def create_category(request: Request, name: str = Form(...), csrf_token: str = F
 
 
 @router.post("/admin/category/{category_id}/edit")
-def update_category(category_id: int, request: Request, name: str = Form(...), csrf_token: str = Form(...), db: Session = Depends(get_db)):
-    """Edita el nombre de una categoría."""
+def update_category(category_id: int, request: Request, name: str = Form(...), image_url: str = Form(""), csrf_token: str = Form(...), db: Session = Depends(get_db)):
+    """Edita el nombre e imagen de una categoría."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
 
@@ -56,6 +62,7 @@ def update_category(category_id: int, request: Request, name: str = Form(...), c
         return admin_error_response(request, store, db, "Ya existe una categoría con ese nombre", tab="categorias")
     logger.info("Categoría editada store_id=%s id=%s", store.id, category_id)
     cat.name = name
+    cat.image_url = image_url if image_url else ""
     db.commit()
     if request.headers.get("HX-Request"):
         return render_dashboard_html(request, store, db, msg="Categoría actualizada", tab="categorias")

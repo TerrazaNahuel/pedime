@@ -84,7 +84,7 @@ def toggle_store_active(
     """Activa o desactiva un comercio. No permite auto-desactivarse."""
     validate_csrf(request, csrf_token)
     try:
-        admin = _guard_super(request, db)
+        _guard_super(request, db)
     except (NotAuthenticatedException, NotAuthorizedException):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
 
@@ -107,21 +107,21 @@ def set_store_plan(
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """Cambia el plan de un comercio (free/premium). Si es premium, establece fecha de expiración."""
+    """Cambia el plan de un comercio (free/vip_basico/vip_premium). Si es VIP, establece fecha de expiración."""
     validate_csrf(request, csrf_token)
     try:
-        admin = _guard_super(request, db)
+        _guard_super(request, db)
     except (NotAuthenticatedException, NotAuthorizedException):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
 
-    if plan not in ("free", "premium"):
+    if plan not in ("free", "vip_basico", "vip_premium"):
         return RedirectResponse(url="/admin/super?err=Plan+invalido", status_code=302)
 
     target = _require_store(db, store_id)
     if not target:
         return RedirectResponse(url="/admin/super?err=Store+no+encontrado", status_code=302)
     target.plan = plan
-    if plan == "premium":
+    if plan in ("vip_basico", "vip_premium"):
         target.plan_expires_at = datetime.now(UTC) + timedelta(days=PREMIUM_DURATION_DAYS)
     else:
         target.plan_expires_at = None
@@ -143,7 +143,7 @@ def toggle_superadmin(
     """
     validate_csrf(request, csrf_token)
     try:
-        admin = _guard_super(request, db)
+        _guard_super(request, db)
     except (NotAuthenticatedException, NotAuthorizedException):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
 
@@ -154,7 +154,7 @@ def toggle_superadmin(
         return RedirectResponse(url="/admin/super?err=No+podes+sacarte+el+superadmin+a+vos+mismo", status_code=302)
     # Evita que se quede sin superadmins en el sistema
     if target.is_superadmin:
-        superadmin_count = db.query(Store).filter(Store.is_superadmin == True).count()
+        superadmin_count = db.query(Store).filter(Store.is_superadmin).count()
         if superadmin_count <= 1:
             return RedirectResponse(url="/admin/super?err=Debe+haber+al+menos+un+superadmin", status_code=302)
     target.is_superadmin = not target.is_superadmin
@@ -205,7 +205,7 @@ def delete_store(
     """Elimina un comercio del sistema. No permite auto-eliminarse ni borrar superadmins."""
     validate_csrf(request, csrf_token)
     try:
-        admin = _guard_super(request, db)
+        _guard_super(request, db)
     except (NotAuthenticatedException, NotAuthorizedException):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
 

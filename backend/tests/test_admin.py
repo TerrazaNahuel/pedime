@@ -21,11 +21,11 @@ def _csrf(client, url):
     return m.group(1), resp
 
 
-def _make_premium(db, store_id):
-    """Actualiza el plan del store a premium para tests de variantes."""
+def _make_vip(db, store_id, plan="vip_basico"):
+    """Actualiza el plan del store para tests de variantes."""
     store = db.query(Store).filter(Store.id == store_id).first()
     if store:
-        store.plan = "premium"
+        store.plan = plan
         db.commit()
 
 def _login(client, email="test@test.com", password="Test1234!"):
@@ -176,7 +176,7 @@ class TestProducts:
 
     def test_create_product_with_variants(self, client, seed_store, db):
         """Crear producto con variantes debe persistirlas."""
-        _make_premium(db, seed_store.id)
+        _make_vip(db, seed_store.id)
         csrf = _login(client)
         resp = client.post("/admin/product", data={
             "name": "Hamburguesa",
@@ -210,7 +210,7 @@ class TestProducts:
 
     def test_create_product_variant_empty_name_rejected(self, client, seed_store, db):
         """Variante con nombre vacío debe ser rechazada."""
-        _make_premium(db, seed_store.id)
+        _make_vip(db, seed_store.id)
         csrf = _login(client)
         resp = client.post("/admin/product", data={
             "name": "Test", "description": "",
@@ -224,7 +224,7 @@ class TestProducts:
 
     def test_create_product_variant_negative_price_rejected(self, client, seed_store, db):
         """Variante con precio negativo debe ser rechazada."""
-        _make_premium(db, seed_store.id)
+        _make_vip(db, seed_store.id)
         csrf = _login(client)
         resp = client.post("/admin/product", data={
             "name": "Test", "description": "",
@@ -238,7 +238,7 @@ class TestProducts:
 
     def test_edit_product_variants(self, client, seed_store, db):
         """Editar producto debe actualizar variantes."""
-        _make_premium(db, seed_store.id)
+        _make_vip(db, seed_store.id)
         csrf = _login(client)
         client.post("/admin/product", data={
             "name": "Original", "description": "",
@@ -264,7 +264,7 @@ class TestProducts:
 
     def test_duplicate_product_with_variants(self, client, seed_store, db):
         """Duplicar producto debe copiar también las variantes."""
-        _make_premium(db, seed_store.id)
+        _make_vip(db, seed_store.id)
         csrf = _login(client)
         client.post("/admin/product", data={
             "name": "Con Variantes", "description": "",

@@ -22,6 +22,7 @@ class ProductOut(BaseModel):
     image_url: str = ""
     category_id: int
     variants: str = ""
+    featured: bool = False
 
     @field_serializer("price")
     @classmethod
@@ -35,6 +36,7 @@ class CategoryOut(BaseModel):
 
     id: int
     name: str
+    image_url: str = ""
     products: list[ProductOut]
 
 

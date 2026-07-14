@@ -70,14 +70,14 @@ def get_menu(slug: str, db: Session = Depends(get_db)):
         db.query(Product)
         .filter(
             Product.store_id == store.id,
-            Product.available == True,
+            Product.available,
         )
         .all()
     )
 
-    # Agrupa productos por categoría
+    # Agrupa productos por categoría (featured primero, luego sort_order)
     products_by_category = {}
-    for p in products:
+    for p in sorted(products, key=lambda x: (not x.featured, x.sort_order)):
         products_by_category.setdefault(p.category_id, []).append(
             ProductOut(
                 id=p.id,
@@ -89,11 +89,12 @@ def get_menu(slug: str, db: Session = Depends(get_db)):
                 image_url=p.image_url or "",
                 category_id=p.category_id,
                 variants=p.variants or "",
+                featured=p.featured or False,
             )
         )
 
     categories_out = [
-        CategoryOut(id=cat.id, name=cat.name, products=products_by_category.get(cat.id, []))
+        CategoryOut(id=cat.id, name=cat.name, image_url=cat.image_url or "", products=products_by_category.get(cat.id, []))
         for cat in categories.values()
     ]
 

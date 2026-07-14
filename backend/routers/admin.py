@@ -16,7 +16,8 @@ from models import Category, PageView, Product, WhatsAppClick
 from ratelimit import RateLimiter
 from routers import admin_categories, admin_products, admin_settings
 from routers.admin_base import get_authenticated_store, get_client_ip, logger, templates
-from sqlalchemy import Column, DateTime, func as db_func
+from sqlalchemy import Column
+from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
 
 router = APIRouter()

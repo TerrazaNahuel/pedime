@@ -17,21 +17,20 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 import logging
-import secrets
 from contextlib import asynccontextmanager
 
 from alembic import command
 from alembic.config import Config
-from dotenv import load_dotenv
 from database import get_db
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
-from sqlalchemy.orm import Session
 from routers import admin, admin_super, auth, menu_public, payments, tracking
 from routers.admin_base import NotAuthenticatedException, NotAuthorizedException, templates
 from seed import seed_default_store
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 

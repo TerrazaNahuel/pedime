@@ -199,6 +199,13 @@ function renderStoreDetails() {
     } else {
         logo.classList.add("hidden");
     }
+    const printLogo = document.getElementById("print-logo");
+    const printTitle = document.getElementById("print-title");
+    if (storeData.logo_url) {
+        printLogo.src = storeData.logo_url;
+        printLogo.classList.remove("hidden");
+    }
+    printTitle.textContent = storeData.store_name;
     const meta = document.getElementById("store-meta");
     meta.innerHTML = "";
     const parts = [];
@@ -251,6 +258,12 @@ function renderProductCard(prod, variantsArr, select) {
     const name = document.createElement("h3");
     name.className = "text-white font-semibold";
     name.textContent = prod.name;
+    if (prod.featured) {
+        const star = document.createElement("span");
+        star.className = "text-amber-400 ml-1.5 featured-badge";
+        star.textContent = "⭐";
+        name.appendChild(star);
+    }
     info.appendChild(name);
     if (prod.description) {
         const desc = document.createElement("p");
@@ -336,6 +349,14 @@ function renderCategorySection(cat, pillsContainer, container) {
     const title = document.createElement("h2");
     title.className = "text-sm font-semibold text-gray-400 uppercase tracking-wider";
     title.textContent = cat.name;
+    if (cat.image_url) {
+        const catImg = document.createElement("img");
+        catImg.className = "w-8 h-8 rounded-lg object-cover inline-block mr-2 align-middle";
+        catImg.src = cat.image_url;
+        catImg.alt = cat.name;
+        catImg.onerror = () => catImg.style.display = "none";
+        title.prepend(catImg);
+    }
     header.appendChild(title);
     const headerRight = document.createElement("div");
     headerRight.className = "flex items-center gap-2";

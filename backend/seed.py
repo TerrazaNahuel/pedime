@@ -6,8 +6,6 @@ Crea un store de ejemplo con categorías y productos, y loguea la contraseña ge
 """
 
 import logging
-import secrets
-import string
 from decimal import Decimal
 
 from database import SessionLocal
@@ -48,7 +46,7 @@ def seed_default_store():
             payment_transfer=True,
             payment_cash=True,
             is_superadmin=True,
-            plan="premium",
+            plan="vip_premium",
         )
         db.add(store)
         db.flush()  # Forzar asignación de ID sin commit

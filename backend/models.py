@@ -35,7 +35,7 @@ class Store(Base):
     opening_time = Column(String(5), default="")  # HH:MM — hora de apertura
     closing_time = Column(String(5), default="")  # HH:MM — hora de cierre
     working_days = Column(String(20), default="1,2,3,4,5,6,7")  # Días laborales: 1=Lunes … 7=Domingo
-    plan = Column(String(20), default="free")  # Tipo de suscripción: "free" | "premium"
+    plan = Column(String(20), default="free")  # "free" | "vip_basico" | "vip_premium"
     plan_expires_at = Column(DateTime, nullable=True)  # Fecha de vencimiento del plan premium
     is_active = Column(Boolean, default=True)  # Comercio visible/publicado
     is_superadmin = Column(Boolean, default=False)  # Permisos de administración global
@@ -51,6 +51,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
+    image_url = Column(String(500), default="")  # URL de imagen de la categoría (VIP+)
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)  # Relación M:1 con stores
 
     store = relationship("Store", back_populates="categories")
@@ -70,6 +71,7 @@ class Product(Base):
     stock = Column(Integer, default=0)  # Stock disponible (0 = sin límite)
     image_url = Column(String(500), default="")
     sort_order = Column(Integer, default=0)  # Orden personalizado por drag & drop
+    featured = Column(Boolean, default=False)  # Producto destacado (aparece primero)
     variants = Column(Text, default="")  # JSON con variantes: [{"name":"Doble","price":150}]
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)  # Relación M:1 con categories
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)  # Relación M:1 con stores

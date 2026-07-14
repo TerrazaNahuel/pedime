@@ -17,7 +17,13 @@ from database import get_db
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from models import Category, Product
-from routers.admin_base import admin_error_response, check_plan_limit, get_authenticated_store, logger, render_dashboard_html
+from routers.admin_base import (
+    admin_error_response,
+    check_plan_limit,
+    get_authenticated_store,
+    logger,
+    render_dashboard_html,
+)
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
 
@@ -59,8 +65,8 @@ def validate_variants_json(variants: str, store) -> str | None:
     """Valida el JSON de variantes. Retorna mensaje de error o None si es válido."""
     if not variants or variants == "[]":
         return None
-    if store.plan != "premium":
-        return "Las variantes son solo para plan Premium"
+    if store.plan == "free":
+        return "Las variantes son solo para planes VIP"
     try:
         parsed = json.loads(variants)
     except json.JSONDecodeError:
@@ -92,7 +98,7 @@ def create_product(
     price: Decimal = Form(...), category_id: int = Form(...),
     image_url: str = Form(""), product_id: int = Form(0),
     stock: int = Form(0), variants: str = Form(""),
-    available: str = Form("1"),
+    available: str = Form("1"), featured: str = Form("0"),
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -101,7 +107,7 @@ def create_product(
     store = get_authenticated_store(request, db)
 
     if product_id > 0:
-        return update_product(request, name, description, price, category_id, image_url, product_id, stock, variants, available, store, db)
+        return update_product(request, name, description, price, category_id, image_url, product_id, stock, variants, available, featured, store, db)
 
     variants_err = validate_variants_json(variants, store)
     if variants_err:
@@ -112,11 +118,11 @@ def create_product(
     field_err = _validate_product_fields(name, description, price, stock, image_url, available, category_id, store, db)
     if field_err:
         return admin_error_response(request, store, db, field_err)
-    # Obtiene el sort_order mínimo actual para insertar el nuevo producto al inicio
     min_sort = db.query(db_func.min(Product.sort_order)).filter(Product.store_id == store.id).scalar() or 0
     db.add(Product(name=name, description=description, price=price,
                    image_url=image_url, category_id=category_id, store_id=store.id,
-                   stock=stock, variants=variants, available=(available == "1"), sort_order=min_sort - 1))
+                   stock=stock, variants=variants, available=(available == "1"),
+                   featured=(featured == "1"), sort_order=min_sort - 1))
     db.commit()
     logger.info("Producto creado store_id=%s category_id=%s", store.id, category_id)
     if request.headers.get("HX-Request"):
@@ -124,7 +130,7 @@ def create_product(
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
-def update_product(request, name, description, price, category_id, image_url, product_id, stock, variants, available, store, db):
+def update_product(request, name, description, price, category_id, image_url, product_id, stock, variants, available, featured, store, db):
     """Edita un producto existente."""
     variants_err = validate_variants_json(variants, store)
     if variants_err:
@@ -146,6 +152,7 @@ def update_product(request, name, description, price, category_id, image_url, pr
     prod.image_url = image_url
     prod.stock = stock
     prod.variants = variants
+    prod.featured = (featured == "1")
     db.commit()
     logger.info("Producto editado store_id=%s id=%s", store.id, product_id)
     if request.headers.get("HX-Request"):
@@ -178,6 +185,7 @@ def duplicate_product(product_id: int, request: Request, csrf_token: str = Form(
         store_id=store.id,
         sort_order=min_sort - 1,
         variants=original.variants,
+        featured=original.featured,
     )
     db.add(dup)
     db.commit()
@@ -218,6 +226,23 @@ def toggle_product(product_id: int, request: Request, csrf_token: str = Form(...
     logger.info("Producto toggle store_id=%s id=%s available=%s", store.id, product_id, prod.available)
     if request.headers.get("HX-Request"):
         return render_dashboard_html(request, store, db, msg="Visibilidad actualizada", tab="productos")
+    return RedirectResponse(url="/admin/dashboard", status_code=302)
+
+
+@router.post("/admin/product/{product_id}/toggle-featured")
+def toggle_featured(product_id: int, request: Request, csrf_token: str = Form(...), db: Session = Depends(get_db)):
+    """Alterna el estado destacado de un producto."""
+    validate_csrf(request, csrf_token)
+    store = get_authenticated_store(request, db)
+
+    prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
+    if not prod:
+        return admin_error_response(request, store, db, "Producto no encontrado")
+    prod.featured = not prod.featured
+    db.commit()
+    logger.info("Producto toggle featured store_id=%s id=%s featured=%s", store.id, product_id, prod.featured)
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, msg="Destacado actualizado", tab="productos")
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 

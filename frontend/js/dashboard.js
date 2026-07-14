@@ -54,7 +54,7 @@
      * Abre el modal de edición de producto con los datos existentes.
      * Expande automáticamente la categoría a la que pertenece el producto.
      */
-    window.editProduct = function(id, name, description, price, categoryId, available, imageUrl, stock, variants) {
+    window.editProduct = function(id, name, description, price, categoryId, available, imageUrl, stock, variants, featured) {
         var exp = loadExpanded();
         exp.add(categoryId);
         saveExpanded(exp);
@@ -67,6 +67,8 @@
         document.getElementById('product-available').checked = available;
         document.getElementById('product-image').value = imageUrl || '';
         document.getElementById('product-stock').value = stock || 0;
+        var cb = document.getElementById('product-featured');
+        if (cb) cb.checked = !!featured;
         try {
             var v = JSON.parse(variants || "[]");
             currentVariants = Array.isArray(v) ? v : [];
@@ -146,10 +148,10 @@
         }
     }
 
-    /** Activa el modo edición inline de una categoría mostrando el input de texto. */
+    /** Activa el modo edición inline de una categoría mostrando inputs. */
     window.editCategory = function(id) {
         document.getElementById('cat-name-' + id).classList.add('hidden');
-        document.getElementById('cat-input-' + id).classList.remove('hidden');
+        document.getElementById('cat-edit-group-' + id).classList.remove('hidden');
         document.getElementById('cat-input-' + id).focus();
         document.getElementById('cat-save-' + id).classList.remove('hidden');
         document.getElementById('cat-cancel-' + id).classList.remove('hidden');
@@ -163,7 +165,7 @@
     /** Cancela la edición inline de una categoría, restaurando el nombre original. */
     window.cancelCategory = function(id) {
         document.getElementById('cat-name-' + id).classList.remove('hidden');
-        document.getElementById('cat-input-' + id).classList.add('hidden');
+        document.getElementById('cat-edit-group-' + id).classList.add('hidden');
         document.getElementById('cat-input-' + id).value = document.getElementById('cat-name-' + id).textContent.trim();
         document.getElementById('cat-save-' + id).classList.add('hidden');
         document.getElementById('cat-cancel-' + id).classList.add('hidden');
@@ -223,6 +225,13 @@
                 case 'start-payment':
                     window.startPayment(btn.getAttribute('data-plan'));
                     break;
+                case 'show-qr':
+                    window.showQR();
+                    break;
+                case 'close-qr':
+                    document.getElementById('qr-modal').classList.add('hidden');
+                    document.body.style.overflow = '';
+                    break;
             }
         });
 
@@ -239,7 +248,8 @@
             var imageUrl = btn.dataset.editImage || '';
             var stock = parseInt(btn.dataset.editStock) || 0;
             var variants = btn.dataset.editVariants || '';
-            window.editProduct(id, name, description, price, categoryId, available, imageUrl, stock, variants);
+            var featured = btn.dataset.editFeatured === 'true';
+            window.editProduct(id, name, description, price, categoryId, available, imageUrl, stock, variants, featured);
         });
 
         // Confirmación nativa para formularios con data-confirm
@@ -319,6 +329,34 @@
         }
     }
 
+    /** Muestra el modal con el código QR del menú público. */
+    window.showQR = function() {
+        var modal = document.getElementById('qr-modal');
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        var container = document.getElementById('qrcode');
+        container.innerHTML = '';
+        var menuUrl = document.querySelector('[href^="/menu/"]');
+        if (!menuUrl) return;
+        var url = window.location.origin + menuUrl.getAttribute('href');
+        new QRCode(container, { text: url, width: 200, height: 200 });
+        setTimeout(function() {
+            var canvas = container.querySelector('canvas');
+            if (canvas) {
+                document.getElementById('qr-download-btn').href = canvas.toDataURL('image/png');
+            }
+        }, 300);
+    };
+
+    // Cierra QR modal al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        var modal = document.getElementById('qr-modal');
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    });
+
     /** Inicia el flujo de pago con Mercado Pago: crea una preferencia y redirige al checkout. */
     window.startPayment = async function(plan) {
         var btn = event.target;
@@ -336,12 +374,12 @@
             } else {
                 alert("Error: " + (data.error || "No se pudo iniciar el pago"));
                 btn.disabled = false;
-                btn.textContent = plan === "yearly" ? "Pagar Anual (ahorrá 25%)" : "Pagar Mensual";
+                btn.textContent = plan === "vip_premium" ? "Contratar VIP Premium" : "Contratar VIP Básico";
             }
         } catch (e) {
             alert("Error de conexión: " + e.message);
             btn.disabled = false;
-            btn.textContent = plan === "yearly" ? "Pagar Anual (ahorrá 25%)" : "Pagar Mensual";
+            btn.textContent = plan === "vip_premium" ? "Contratar VIP Premium" : "Contratar VIP Básico";
         }
     };
 })();

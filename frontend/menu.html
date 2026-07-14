@@ -27,6 +27,25 @@
         .border-accent, .border-emerald-500 { border-color: var(--accent) !important; }
         .shadow-accent, .shadow-emerald-500\/25 { box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--accent) 25%, transparent) !important; }
     </style>
+    <style>
+        @media print {
+            body { background: white !important; color: black !important; }
+            #app { max-width: 100% !important; padding-bottom: 0 !important; }
+            header, #search-section, #category-nav, #cart-fab, #cart-drawer, #toast, .print\:hidden { display: none !important; }
+            #menu-content { display: block !important; padding: 0 !important; }
+            .category-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1.5rem; }
+            .category-section h2 { color: #111 !important; font-size: 1.25rem; border-bottom: 2px solid #333; padding-bottom: 0.25rem; }
+            .product-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.25rem 0; border-bottom: 1px dashed #ccc; }
+            .product-item .product-name { font-weight: 600; }
+            .product-item .product-desc { font-size: 0.8rem; color: #555 !important; }
+            .product-item .product-price { font-weight: 700; white-space: nowrap; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 1rem; }
+            .print-header img { max-width: 80px; margin: 0 auto 0.5rem; }
+            .print-header h1 { font-size: 1.5rem; font-weight: bold; color: #111; }
+            #loading, #error { display: none !important; }
+            .featured-badge { display: inline-block; }
+        }
+    </style>
 </head>
 <body class="bg-[#0a0a0a] text-white font-sans antialiased">
     <div id="app" class="max-w-lg mx-auto min-h-screen relative pb-24">
@@ -38,8 +57,19 @@
                     <h1 id="store-name" class="text-xl font-bold text-white">—</h1>
                     <div id="store-meta" class="hidden mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500"></div>
                 </div>
+                <button id="print-btn" class="ml-auto text-gray-500 hover:text-accent transition print:hidden" title="Imprimir / PDF" onclick="window.print()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                </button>
             </div>
         </header>
+
+        <!-- Print-only header -->
+        <div class="print-header hidden">
+            <img id="print-logo" class="hidden max-h-20 mx-auto mb-2" alt="Logo">
+            <h1 id="print-title">—</h1>
+        </div>
 
         <!-- Spinner de carga -->
         <div id="loading" class="flex items-center justify-center py-20">

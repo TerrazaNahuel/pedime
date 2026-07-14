@@ -4,27 +4,38 @@ Endpoints de pago con Mercado Pago para suscripciones Premium.
 Usa el SDK oficial de Mercado Pago. Requiere MP_ACCESS_TOKEN en .env.
 """
 
-import json
 import logging
 from datetime import UTC, datetime, timedelta
 
 import mercadopago
 from database import get_db
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from models import PaymentTransaction, Store
 from pydantic import BaseModel
-from routers.admin_base import get_authenticated_store, logger as admin_logger
+from routers.admin_base import get_authenticated_store
+from routers.admin_base import logger as admin_logger
 from sqlalchemy.orm import Session
 
-from backend.settings import MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, PREMIUM_DURATION_DAYS, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY, SITE_URL
+from backend.settings import (
+    MP_ACCESS_TOKEN,
+    PREMIUM_DURATION_DAYS,
+    SITE_URL,
+    VIP_BASICO_PRICE,
+    VIP_PREMIUM_PRICE,
+)
 
 router = APIRouter()
 logger = logging.getLogger("pedime.payments")
 
+PLAN_INFO = {
+    "vip_basico": {"title": "Pedime VIP Básico", "price": VIP_BASICO_PRICE},
+    "vip_premium": {"title": "Pedime VIP Premium", "price": VIP_PREMIUM_PRICE},
+}
+
 
 class CreatePreferencePayload(BaseModel):
-    plan: str  # "monthly" o "yearly"
+    plan: str  # "vip_basico" | "vip_premium"
 
 
 @router.post("/api/payments/create-preference")
@@ -35,14 +46,13 @@ def create_preference(payload: CreatePreferencePayload, request: Request, db: Se
     if not MP_ACCESS_TOKEN:
         return JSONResponse({"ok": False, "error": "Mercado Pago no está configurado."}, status_code=503)
 
-    if payload.plan == "yearly":
-        title = "Pedime Premium - Plan Anual"
-        price = PREMIUM_PRICE_YEARLY
-        duration_days = PREMIUM_DURATION_DAYS * 12
-    else:
-        title = "Pedime Premium - Plan Mensual"
-        price = PREMIUM_PRICE_MONTHLY
-        duration_days = PREMIUM_DURATION_DAYS
+    plan_info = PLAN_INFO.get(payload.plan)
+    if not plan_info:
+        return JSONResponse({"ok": False, "error": "Plan inválido."}, status_code=400)
+
+    title = plan_info["title"]
+    price = plan_info["price"]
+    duration_days = PREMIUM_DURATION_DAYS
 
     sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
     # Crea la preferencia con URLs de retorno, webhook y referencia externa (store_id)
@@ -133,10 +143,10 @@ async def payment_webhook(request: Request, db: Session = Depends(get_db)):
 
         store = db.query(Store).filter(Store.id == store_id).first()
         if store:
-            store.plan = "premium"
+            store.plan = tx.plan_type
             store.plan_expires_at = tx.expires_at
             db.commit()
-            admin_logger.info("Store %s activado Premium vía MP (payment=%s)", store_id, payment_id)
+            admin_logger.info("Store %s activado %s vía MP (payment=%s)", store_id, tx.plan_type, payment_id)
 
         logger.info("Pago MP aprobado: store=%s payment=%s", store_id, payment_id)
 
@@ -150,6 +160,7 @@ def payment_success(request: Request, db: Session = Depends(get_db)):
     preference_id = request.query_params.get("preference_id")
     external_ref = request.query_params.get("external_reference", "")
 
+    plan_nombre = "VIP"
     if external_ref.isdigit():
         store_id = int(external_ref)
         store = db.query(Store).filter(Store.id == store_id).first()
@@ -162,12 +173,13 @@ def payment_success(request: Request, db: Session = Depends(get_db)):
                 tx.status = "approved"
                 tx.mp_payment_id = str(payment_id) if payment_id else tx.mp_payment_id
                 tx.approved_at = datetime.now(UTC)
-                store.plan = "premium"
+                store.plan = tx.plan_type
                 store.plan_expires_at = tx.expires_at
                 db.commit()
-                admin_logger.info("Store %s activado Premium vía success callback", store_id)
+                admin_logger.info("Store %s activado %s vía success callback", store_id, tx.plan_type)
+            plan_nombre = {"vip_basico": "VIP Básico", "vip_premium": "VIP Premium"}.get(store.plan, "VIP")
 
-    return RedirectResponse(url="/admin/dashboard?msg=¡Bienvenido+a+Premium!")
+    return RedirectResponse(url=f"/admin/dashboard?msg=¡Bienvenido+a+{plan_nombre}!")
 
 
 @router.get("/api/payments/failure")

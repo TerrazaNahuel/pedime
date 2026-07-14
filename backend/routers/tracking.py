@@ -16,12 +16,12 @@ from models import PageView, Store, WhatsAppClick
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
-router = APIRouter()
-logger = logging.getLogger("pedime.tracking")
-
 from backend.settings import SITE_URL
 
 SITE_HOST = urlparse(SITE_URL).hostname or "localhost"
+
+router = APIRouter()
+logger = logging.getLogger("pedime.tracking")
 VALID_PAYMENT_METHODS = {"", "transfer", "cash", "mercadopago", "other"}
 
 
@@ -73,7 +73,7 @@ class TrackClickPayload(BaseModel):
 def track_view(slug: str, request: Request, db: Session = Depends(get_db)):
     """Registra una visita al menú del comercio."""
     _validate_origin(request)
-    store = db.query(Store).filter(Store.slug == slug, Store.is_active == True).first()
+    store = db.query(Store).filter(Store.slug == slug, Store.is_active).first()
     if not store:
         return JSONResponse({"ok": False}, status_code=404)
     db.add(PageView(store_id=store.id, viewed_at=datetime.now(UTC)))
@@ -85,7 +85,7 @@ def track_view(slug: str, request: Request, db: Session = Depends(get_db)):
 def track_whatsapp_click(slug: str, payload: TrackClickPayload, request: Request, db: Session = Depends(get_db)):
     """Registra un clic en el botón de WhatsApp para enviar un pedido."""
     _validate_origin(request)
-    store = db.query(Store).filter(Store.slug == slug, Store.is_active == True).first()
+    store = db.query(Store).filter(Store.slug == slug, Store.is_active).first()
     if not store:
         return JSONResponse({"ok": False}, status_code=404)
     db.add(WhatsAppClick(
