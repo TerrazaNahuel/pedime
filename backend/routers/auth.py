@@ -7,18 +7,18 @@ y redacción de emails en logs por privacidad.
 
 import logging
 import re
-import secrets
 
-from csrf import COOKIE_CONFIG, validate_csrf
+from csrf import csrf_token_response, validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from models import Store
 from passlib.hash import bcrypt
 from ratelimit import RateLimiter
-from routers.admin_base import get_client_ip, templates
+from routers.admin_base import get_client_ip, render_template_with_csrf
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from validators import validate_email, validate_name, validate_password_match, validate_whatsapp
 
 from backend.password import validate_password
 from backend.settings import (
@@ -58,20 +58,12 @@ def login_page(request: Request):
     """Muestra el formulario de login. Si ya está autenticado, redirige al dashboard."""
     if request.session.get("authenticated"):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
-    token = secrets.token_hex(32)
-    resp = templates.TemplateResponse(request, "login.html", {
-        "error": None, "csrf_token": token,
-    })
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-    return resp
+    return render_template_with_csrf(request, "login.html", {"error": None})
 
 
 @router.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...), csrf_token: str = Form(...), db: Session = Depends(get_db)):
-    """
-    Procesa el formulario de login.
-    Rate limit: 5 intentos por minuto por IP.
-    """
+    """Procesa el formulario de login. Rate limit: 5 intentos por minuto por IP."""
     validate_csrf(request, csrf_token)
     email = email.lower().strip()
     ip = get_client_ip(request)
@@ -79,23 +71,15 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), c
         logger.warning("Rate limit excedido para login ip=%s", ip)
         raise HTTPException(status_code=429, detail="Demasiados intentos. Esperá un minuto.")
     store = db.query(Store).filter(Store.email == email).first()
-    # Usa bcrypt.verify para comparación segura contra timing attacks
     if not store or not bcrypt.verify(password, store.password_hash):
         logger.warning("Login fallido para email=%s desde %s", redact_email(email), request.client.host if request.client else "?")
-        token = secrets.token_hex(32)
-        resp = templates.TemplateResponse(request, "login.html", {
-            "error": "Email o contraseña incorrectos", "csrf_token": token,
-        })
-        resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-        return resp
+        return render_template_with_csrf(request, "login.html", {"error": "Email o contraseña incorrectos"})
     logger.info("Login exitoso store_id=%s email=%s", store.id, redact_email(email))
-    # Regenera la sesión para prevenir session fixation
     request.session.clear()
     request.session["authenticated"] = True
     request.session["store_id"] = store.id
-    token = secrets.token_hex(32)
     resp = RedirectResponse(url="/admin/dashboard", status_code=302)
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
+    csrf_token_response(resp)
     return resp
 
 
@@ -104,12 +88,7 @@ def register_page(request: Request):
     """Muestra el formulario de registro."""
     if request.session.get("authenticated"):
         return RedirectResponse(url="/admin/dashboard", status_code=302)
-    token = secrets.token_hex(32)
-    resp = templates.TemplateResponse(request, "register.html", {
-        "error": None, "csrf_token": token,
-    })
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-    return resp
+    return render_template_with_csrf(request, "register.html", {"error": None})
 
 
 @router.post("/register")
@@ -132,13 +111,7 @@ def register(
     validate_csrf(request, csrf_token)
 
     def render_error(msg):
-        """Helper que renderiza register.html con un mensaje de error y nuevo CSRF."""
-        token = secrets.token_hex(32)
-        resp = templates.TemplateResponse(request, "register.html", {
-            "error": msg, "csrf_token": token,
-        })
-        resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-        return resp
+        return render_template_with_csrf(request, "register.html", {"error": msg})
 
     ip = get_client_ip(request)
     if not rate_limiter.check(f"register:{ip}", max_attempts=REGISTER_MAX_ATTEMPTS, window_seconds=REGISTER_WINDOW_SECONDS):
@@ -146,8 +119,9 @@ def register(
         return render_error("Demasiados registros. Esperá 5 minutos.")
 
     # Validaciones de contraseña
-    if password != confirm_password:
-        return render_error("Las contraseñas no coinciden")
+    pw_match_err = validate_password_match(password, confirm_password)
+    if pw_match_err:
+        return render_error(pw_match_err)
     pw_err = validate_password(password)
     if pw_err:
         return render_error(pw_err)
@@ -155,16 +129,15 @@ def register(
     email = email.lower().strip()
 
     # Validaciones de datos del comercio
-    if len(name) > 100:
-        return render_error("El nombre es demasiado largo (máx. 100 caracteres)")
-    if len(email) > 200:
-        return render_error("El email es demasiado largo (máx. 200 caracteres)")
-    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-        return render_error("El formato del email no es válido")
-    if len(whatsapp) > 50:
-        return render_error("El número de WhatsApp es demasiado largo")
-    if not re.match(r"^\d{10,15}$", re.sub(r"\D", "", whatsapp)):
-        return render_error("El número de WhatsApp debe tener entre 10 y 15 dígitos")
+    name_err = validate_name(name, "El nombre")
+    if name_err:
+        return render_error(name_err)
+    email_err = validate_email(email)
+    if email_err:
+        return render_error(email_err)
+    whatsapp_err = validate_whatsapp(whatsapp)
+    if whatsapp_err:
+        return render_error(whatsapp_err)
     if len(slug) > 100:
         return render_error("El slug es demasiado largo (máx. 100 caracteres)")
     if not re.match(r"^[a-z0-9-]+$", slugify(slug)):

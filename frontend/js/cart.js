@@ -84,7 +84,7 @@ function saveCartState() {
             orderComment,
         }));
     } catch {
-        console.error("Pedime: no se pudo guardar el estado del carrito en localStorage");
+        // localStorage no disponible o lleno, se continua sin persistir
     }
 }
 
@@ -112,7 +112,7 @@ function loadCartState() {
         if (data.deliveryReference) deliveryReference = data.deliveryReference;
         if (data.orderComment) orderComment = data.orderComment;
     } catch {
-        console.warn("Pedime: no se pudo cargar el estado del carrito desde localStorage");
+        // sin estado previo en localStorage, se usa el default
     }
 }
 
@@ -168,8 +168,7 @@ async function fetchMenu() {
                 try {
                     const v = JSON.parse(p.variants || "[]");
                     p._variantsArr = Array.isArray(v) && v.length ? v : null;
-                } catch (e) {
-                    console.warn("Pedime: error parseando variants del producto", p.id, e);
+                } catch {
                     p._variantsArr = null;
                 }
                 productMap[p.id] = p;
@@ -178,7 +177,7 @@ async function fetchMenu() {
         renderMenu();
         // Tracking de visita (fire-and-forget)
         navigator.sendBeacon(`${API_BASE}/api/track/view/${currentSlug}`, "");
-    } catch { console.warn("fetchMenu falló"); showError(); }
+    } catch { showError(); }
 }
 
 /**
@@ -424,28 +423,31 @@ function toggleCategory(catId) {
     }
 }
 
-/** Filtro de búsqueda en tiempo real: oculta productos que no coinciden y auto-expande categorías relevantes. */
+/** Filtro de búsqueda con debounce: oculta productos que no coinciden y auto-expande categorías relevantes. */
+let _searchTimer = null;
 document.getElementById("search-input").addEventListener("input", function() {
-    const q = this.value.toLowerCase().trim();
-    // Filtra cada tarjeta de producto por el nombre
-    document.querySelectorAll(".product-card").forEach(card => {
-        const name = card.getAttribute("data-name") || "";
-        card.style.display = (!q || name.includes(q)) ? "" : "none";
-    });
-    // Oculta/muestra secciones de categoría y auto-expande durante la búsqueda
-    document.querySelectorAll("#menu-content > div[id^='cat-']").forEach(section => {
-        const visibleCards = section.querySelectorAll('.product-card[style*="display: none"]');
-        const allCards = section.querySelectorAll(".product-card");
-        section.style.display = (allCards.length === visibleCards.length && q) ? "none" : "";
-        if (q && allCards.length > visibleCards.length) {
-            const wrapper = section.querySelector(".products-wrapper");
-            const chevron = section.querySelector(".chevron");
-            if (wrapper && wrapper.classList.contains("hidden")) {
-                wrapper.classList.remove("hidden");
-                if (chevron) chevron.classList.add("rotate-180");
+    clearTimeout(_searchTimer);
+    var self = this;
+    _searchTimer = setTimeout(function() {
+        const q = self.value.toLowerCase().trim();
+        document.querySelectorAll(".product-card").forEach(card => {
+            const name = card.getAttribute("data-name") || "";
+            card.style.display = (!q || name.includes(q)) ? "" : "none";
+        });
+        document.querySelectorAll("#menu-content > div[id^='cat-']").forEach(section => {
+            const visibleCards = section.querySelectorAll('.product-card[style*="display: none"]');
+            const allCards = section.querySelectorAll(".product-card");
+            section.style.display = (allCards.length === visibleCards.length && q) ? "none" : "";
+            if (q && allCards.length > visibleCards.length) {
+                const wrapper = section.querySelector(".products-wrapper");
+                const chevron = section.querySelector(".chevron");
+                if (wrapper && wrapper.classList.contains("hidden")) {
+                    wrapper.classList.remove("hidden");
+                    if (chevron) chevron.classList.add("rotate-180");
+                }
             }
-        }
-    });
+        });
+    }, 200);
 });
 
 /**
@@ -962,8 +964,8 @@ function sendWhatsAppTracking(total, payMethod) {
     try {
         navigator.sendBeacon(`${API_BASE}/api/track/whatsapp-click/${currentSlug}`,
             JSON.stringify({ cart_value: total, item_count: getCartCount(), payment_method: payMethod }));
-    } catch (e) {
-        console.warn("Pedime: error en tracking WhatsApp", e);
+    } catch {
+        // tracking es fire-and-forget, falla silenciosa
     }
 }
 

@@ -6,10 +6,9 @@ activar/desactivar stores, cambiar planes, otorgar/quitar superadmin,
 resetear contraseñas y eliminar comercios.
 """
 
-import secrets
 from datetime import UTC, datetime, timedelta
 
-from csrf import COOKIE_CONFIG, validate_csrf
+from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -22,7 +21,7 @@ from routers.admin_base import (
     get_authenticated_store,
     get_client_ip,
     logger,
-    templates,
+    render_template_with_csrf,
 )
 from sqlalchemy.orm import Session
 
@@ -44,12 +43,9 @@ def get_super_admin_store(request: Request, db: Session) -> Store:
 def _super_render(request, admin, db, **extra):
     """Renderiza el dashboard de superadmin con lista de stores y CSRF token."""
     stores = db.query(Store).order_by(Store.id).all()
-    token = secrets.token_hex(32)
-    ctx = {"store": admin, "stores": stores, "csrf_token": token}
+    ctx = {"store": admin, "stores": stores}
     ctx.update(extra)
-    resp = templates.TemplateResponse(request, "super_dashboard.html", ctx)
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-    # Evita caché del navegador para que los datos se vean siempre actualizados
+    resp = render_template_with_csrf(request, "super_dashboard.html", ctx)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return resp
 

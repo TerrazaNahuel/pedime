@@ -15,8 +15,8 @@ from decimal import Decimal
 from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
-from fastapi.responses import RedirectResponse, Response
-from models import Category, Product
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from models import Category, Product, Store
 from routers.admin_base import (
     admin_error_response,
     check_plan_limit,
@@ -130,7 +130,21 @@ def create_product(
     return RedirectResponse(url="/admin/dashboard", status_code=302)
 
 
-def update_product(request, name, description, price, category_id, image_url, product_id, stock, variants, available, featured, store, db):
+def update_product(
+    request: Request,
+    name: str,
+    description: str,
+    price: Decimal,
+    category_id: int,
+    image_url: str,
+    product_id: int,
+    stock: int,
+    variants: str,
+    available: str,
+    featured: str,
+    store: Store,
+    db: Session,
+) -> HTMLResponse | RedirectResponse:
     """Edita un producto existente."""
     variants_err = validate_variants_json(variants, store)
     if variants_err:

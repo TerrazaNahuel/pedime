@@ -68,6 +68,15 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
     return store
 
 
+def render_template_with_csrf(request: Request, template_name: str, context: dict) -> HTMLResponse:
+    """Renderiza una plantilla Jinja2 con un nuevo token CSRF en cookie y contexto."""
+    token = secrets.token_hex(32)
+    context["csrf_token"] = token
+    resp = templates.TemplateResponse(request, template_name, context)
+    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
+    return resp
+
+
 def render_dashboard_html(request: Request, store: Store, db: Session, msg: str = "", err: str = "", tab: str = "productos") -> HTMLResponse:
     """Renderiza el HTML completo del dashboard con nuevo CSRF token. Usado por HTMX."""
     categories = db.query(Category).filter(Category.store_id == store.id).all()
@@ -75,16 +84,13 @@ def render_dashboard_html(request: Request, store: Store, db: Session, msg: str 
     category_products = {}
     for cat in categories:
         category_products[cat.id] = [p for p in products if p.category_id == cat.id]
-    token = secrets.token_hex(32)
     base_url = str(request.base_url)
-    resp = templates.TemplateResponse(request, "dashboard.html", {
+    return render_template_with_csrf(request, "dashboard.html", {
         "store": store, "categories": categories, "products": products,
         "category_products": category_products,
-        "csrf_token": token, "success": msg or None, "error": err or None,
+        "success": msg or None, "error": err or None,
         "base_url": base_url, "active_tab": tab,
     })
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-    return resp
 
 
 def admin_error_response(request: Request, store: Store, db: Session, msg: str, tab: str = "productos") -> HTMLResponse | RedirectResponse:

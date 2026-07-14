@@ -5,17 +5,16 @@ Incluye los sub-routers de productos, categorías y settings.
 Provee el dashboard principal y el logout.
 """
 
-import secrets
 from datetime import UTC, datetime, timedelta
 
-from csrf import COOKIE_CONFIG, validate_csrf
+from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from models import Category, PageView, Product, WhatsAppClick
 from ratelimit import RateLimiter
 from routers import admin_categories, admin_products, admin_settings
-from routers.admin_base import get_authenticated_store, get_client_ip, logger, templates
+from routers.admin_base import get_authenticated_store, get_client_ip, logger, render_template_with_csrf
 from sqlalchemy import Column, case
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
@@ -63,17 +62,14 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
 
     conversion = (clicks_total / views_total * 100) if views_total > 0 else 0
 
-    token = secrets.token_hex(32)
-    resp = templates.TemplateResponse(request, "stats.html", {
-        "store": store, "csrf_token": token, "active_tab": "estadisticas",
+    return render_template_with_csrf(request, "stats.html", {
+        "store": store, "active_tab": "estadisticas",
         "views_total": views_total, "views_today": views_today,
         "views_week": views_week, "views_month": views_month,
         "clicks_total": clicks_total, "clicks_today": clicks_today,
         "clicks_week": clicks_week, "clicks_month": clicks_month,
         "conversion": conversion,
     })
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-    return resp
 
 
 @router.get("/admin/dashboard")
@@ -88,23 +84,18 @@ def admin_dashboard(request: Request, msg: str = "", err: str = "", tab: str = "
     categories = db.query(Category).filter(Category.store_id == store.id).all()
     products = db.query(Product).filter(Product.store_id == store.id).order_by(Product.sort_order, Product.id).all()
 
-    # Agrupa productos por categoría para vista colapsable
     category_products = {}
     for cat in categories:
         category_products[cat.id] = [p for p in products if p.category_id == cat.id]
 
-    token = secrets.token_hex(32)
-    base_url = str(request.base_url)
     if tab not in ("productos", "categorias", "config"):
         tab = "productos"
-    resp = templates.TemplateResponse(request, "dashboard.html", {
+    return render_template_with_csrf(request, "dashboard.html", {
         "store": store, "categories": categories, "products": products,
         "category_products": category_products,
-        "csrf_token": token, "success": msg or None, "error": err or None,
-        "base_url": base_url, "active_tab": tab,
+        "success": msg or None, "error": err or None,
+        "base_url": str(request.base_url), "active_tab": tab,
     })
-    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
-    return resp
 
 
 @router.post("/admin/logout")

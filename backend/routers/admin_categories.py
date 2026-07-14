@@ -17,8 +17,22 @@ from routers.admin_base import (
     render_dashboard_html,
 )
 from sqlalchemy.orm import Session
+from validators import validate_name
 
 router = APIRouter()
+
+
+def _validate_category_name(name: str, store, exclude_id: int | None, db: Session) -> str | None:
+    """Valida nombre de categoría: longitud, no vacío, y no duplicado."""
+    err = validate_name(name, "El nombre de la categoría")
+    if err:
+        return err
+    q = db.query(Category).filter(Category.name == name, Category.store_id == store.id)
+    if exclude_id is not None:
+        q = q.filter(Category.id != exclude_id)
+    if q.first():
+        return "Ya existe una categoría con ese nombre"
+    return None
 
 
 @router.post("/admin/category")
@@ -30,13 +44,9 @@ def create_category(request: Request, name: str = Form(...), csrf_token: str = F
     limit_err = check_plan_limit(store, db)
     if limit_err:
         return admin_error_response(request, store, db, limit_err, tab="categorias")
-    if len(name) > 100:
-        return admin_error_response(request, store, db, "El nombre de la categoría es demasiado largo", tab="categorias")
-    if not name.strip():
-        return admin_error_response(request, store, db, "El nombre de la categoría no puede estar vacío", tab="categorias")
-    # Verifica que no exista otra categoría con el mismo nombre en este store
-    if db.query(Category).filter(Category.name == name, Category.store_id == store.id).first():
-        return admin_error_response(request, store, db, "Ya existe una categoría con ese nombre", tab="categorias")
+    name_err = _validate_category_name(name, store, None, db)
+    if name_err:
+        return admin_error_response(request, store, db, name_err, tab="categorias")
     db.add(Category(name=name, store_id=store.id))
     db.commit()
     logger.info("Categoría creada store_id=%s name=%s", store.id, name)
@@ -51,15 +61,12 @@ def update_category(category_id: int, request: Request, name: str = Form(...), i
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
 
-    if len(name) > 100:
-        return admin_error_response(request, store, db, "El nombre de la categoría es demasiado largo", tab="categorias")
-    if not name.strip():
-        return admin_error_response(request, store, db, "El nombre de la categoría no puede estar vacío", tab="categorias")
+    name_err = _validate_category_name(name, store, category_id, db)
+    if name_err:
+        return admin_error_response(request, store, db, name_err, tab="categorias")
     cat = db.query(Category).filter(Category.id == category_id, Category.store_id == store.id).first()
     if not cat:
         return admin_error_response(request, store, db, "Categoría no encontrada", tab="categorias")
-    if db.query(Category).filter(Category.name == name, Category.store_id == store.id, Category.id != category_id).first():
-        return admin_error_response(request, store, db, "Ya existe una categoría con ese nombre", tab="categorias")
     logger.info("Categoría editada store_id=%s id=%s", store.id, category_id)
     cat.name = name
     cat.image_url = image_url if image_url else ""

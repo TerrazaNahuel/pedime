@@ -18,6 +18,7 @@ from ratelimit import RateLimiter
 from routers.admin_base import get_authenticated_store, logger, render_dashboard_html, templates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from validators import validate_email, validate_name, validate_password_match, validate_url, validate_whatsapp
 
 from backend.password import validate_password
 from backend.settings import PASSWORD_CHANGE_MAX_ATTEMPTS, PASSWORD_CHANGE_WINDOW_SECONDS
@@ -101,16 +102,15 @@ def     update_settings(
 
 
 def _validate_basic_fields(name: str, whatsapp: str, email: str, db: Session, store: Store) -> str | None:
-    if len(name) > 100:
-        return "El nombre es demasiado largo (máx. 100 caracteres)"
-    if len(whatsapp) > 50:
-        return "El número de WhatsApp es demasiado largo"
-    if not re.match(r"^\d{10,15}$", re.sub(r"\D", "", whatsapp)):
-        return "El número de WhatsApp debe tener entre 10 y 15 dígitos"
-    if len(email) > 200:
-        return "El email es demasiado largo (máx. 200 caracteres)"
-    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-        return "El formato del email no es válido"
+    name_err = validate_name(name, "El nombre")
+    if name_err:
+        return name_err
+    whatsapp_err = validate_whatsapp(whatsapp)
+    if whatsapp_err:
+        return whatsapp_err
+    email_err = validate_email(email)
+    if email_err:
+        return email_err
     if db.query(Store).filter(Store.email == email, Store.id != store.id).first():
         return "Ese email ya está en uso por otro comercio"
     return None
@@ -119,10 +119,9 @@ def _validate_basic_fields(name: str, whatsapp: str, email: str, db: Session, st
 def _validate_settings_visuals(primary_color: str, logo_url: str, opening_time: str, closing_time: str, working_days: list[str]) -> str | None:
     if not re.match(r"^#[0-9a-fA-F]{6}$", primary_color):
         return "El color primario debe ser un hex válido (ej: #10b981)"
-    if logo_url and not re.match(r"^https?://\S+$", logo_url):
-        return "La URL del logo no es válida"
-    if len(logo_url) > 500:
-        return "La URL del logo es demasiado larga (máx. 500 caracteres)"
+    url_err = validate_url(logo_url, "La URL del logo")
+    if url_err:
+        return url_err
     time_re = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
     if opening_time and not time_re.match(opening_time):
         return "El horario de apertura debe tener formato HH:MM (ej: 09:00)"
@@ -146,8 +145,9 @@ def _handle_password_change(store: Store, current_password: str, new_password: s
         return "Demasiados intentos de cambio de contraseña. Esperá un minuto."
     if not bcrypt.verify(current_password, store.password_hash):
         return "Contraseña actual incorrecta"
-    if new_password != confirm_new_password:
-        return "Las contraseñas nuevas no coinciden"
+    pwd_err = validate_password_match(new_password, confirm_new_password)
+    if pwd_err:
+        return pwd_err
     pw_err = validate_password(new_password, "La nueva contraseña")
     if pw_err:
         return pw_err

@@ -7,7 +7,7 @@
 
     /** Carga el Set de IDs de categorías expandidas desde sessionStorage. */
     function loadExpanded() {
-        try { return new Set(JSON.parse(sessionStorage.getItem('pedime_exp') || '[]')); } catch (e) { console.warn("Pedime: error cargando categorías expandidas", e); return new Set(); }
+        try { return new Set(JSON.parse(sessionStorage.getItem('pedime_exp') || '[]')); } catch { return new Set(); }
     }
     /** Guarda el Set de IDs de categorías expandidas en sessionStorage. */
     function saveExpanded(set) {
@@ -22,7 +22,7 @@
                 var id = parseInt(g.id.replace('cat-group-','')), a = document.getElementById('cat-arrow-'+id);
                 e.has(id) ? (g.style.display = '', a && (a.style.transform = 'rotate(0deg)')) : (g.style.display = 'none', a && (a.style.transform = 'rotate(-90deg)'));
             });
-        } catch (ex) { console.warn("Pedime: error restaurando categorías expandidas", ex); }
+        } catch { /* sin categorías en el DOM, ignorar */ }
     }
 
     /** Cambia entre las pestañas del dashboard: productos, categorías o configuración. */
@@ -72,8 +72,7 @@
         try {
             var v = JSON.parse(variants || "[]");
             currentVariants = Array.isArray(v) ? v : [];
-        } catch (e) {
-            console.warn("Pedime: error parseando variants en edit", e);
+        } catch {
             currentVariants = [];
         }
         renderVariants();
@@ -324,8 +323,8 @@
                     }
                 });
             }
-        } catch (e) {
-            console.warn("SortableJS no disponible, drag & drop desactivado:", e);
+        } catch {
+            // SortableJS no disponible, drag & drop desactivado sin notificación
         }
     }
 
