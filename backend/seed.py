@@ -14,6 +14,8 @@ from database import SessionLocal
 from models import Category, Product, Store
 from passlib.hash import bcrypt
 
+from backend.settings import DEMO_PASSWORD
+
 logger = logging.getLogger("pedime.seed")
 
 
@@ -24,20 +26,21 @@ def seed_default_store():
         existing = db.query(Store).first()
         if existing:
             return
-        default_password = "Admin123!"
+        default_password = DEMO_PASSWORD
 
+        # ── Log de credenciales del store demo ──
         logger.info("=" * 50)
         logger.info("STORE SEMILLA CREADA")
-        logger.info("Email: nhlterraza@gmail.com")
+        logger.info("Email: demo@pedime.app")
         logger.info("Contraseña: %s", default_password)
         logger.info("¡CAMBIALA apenas puedas desde el panel de admin!")
         logger.info("=" * 50)
 
-        # Store demo (superadmin + premium)
+        # ── Store demo con permisos de superadmin y plan premium ──
         store = Store(
             name="ElAdmin",
             slug="eladmin",
-            email="nhlterraza@gmail.com",
+            email="demo@pedime.app",
             whatsapp="542473419927",
             password_hash=bcrypt.hash(default_password),
             delivery_available=True,
@@ -48,16 +51,16 @@ def seed_default_store():
             plan="premium",
         )
         db.add(store)
-        db.flush()
+        db.flush()  # Forzar asignación de ID sin commit
 
-        # Categorías
+        # ── Categorías del menú ──
         categoria_pizzas = Category(name="Pizzas", store_id=store.id)
         categoria_bebidas = Category(name="Bebidas", store_id=store.id)
         categoria_promos = Category(name="Promos", store_id=store.id)
         db.add_all([categoria_pizzas, categoria_bebidas, categoria_promos])
         db.flush()
 
-        # Productos de ejemplo
+        # ── Productos de ejemplo con precios ficticios ──
         productos = [
             Product(
                 name="Muzzarella",
@@ -104,6 +107,7 @@ def seed_default_store():
         db.commit()
         logger.info("Store semilla creada: id=%s slug=%s", store.id, store.slug)
     except Exception:
-        logger.warning("Seed ya existe o falló (race condition)", exc_info=True)
+        # Si el store ya existe o hay un error transitorio, se omite sin romper el arranque
+        logger.debug("Seed no ejecutado (store ya existe o error transitorio)", exc_info=True)
     finally:
         db.close()

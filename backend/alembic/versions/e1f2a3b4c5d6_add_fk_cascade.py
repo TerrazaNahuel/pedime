@@ -39,6 +39,7 @@ def _table_exists(bind, table_name):
 
 
 def upgrade():
+    import logging
     bind = op.get_bind()
     if bind.engine.name == "sqlite":
         return
@@ -48,8 +49,10 @@ def upgrade():
             continue
         try:
             op.drop_constraint(fk_name, table, type_="foreignkey")
-        except Exception:
-            pass
+        except sa.exc.SQLAlchemyError:
+            logging.getLogger("alembic.migration").info(
+                "FK %s no existe en %s (salteando)", fk_name, table
+            )
         op.create_foreign_key(fk_name, table, ref, columns, ["id"], ondelete="CASCADE")
 
 
@@ -63,6 +66,6 @@ def downgrade():
             continue
         try:
             op.drop_constraint(fk_name, table, type_="foreignkey")
-        except Exception:
+        except sa.exc.SQLAlchemyError:
             pass
         op.create_foreign_key(fk_name, table, ref, columns, ["id"])

@@ -11,27 +11,46 @@ import secrets
 
 from fastapi import HTTPException, Request
 
-# secure=True solo en producción (cuando ENVIRONMENT=production). En local HTTP sin HTTPS, secure=False.
+# secure=True solo en producción (cuando ENVIRONMENT=production).
+# En local HTTP sin HTTPS, secure=False para evitar problemas de cookie.
 _csrf_secure = os.getenv("ENVIRONMENT", "development") == "production"
 
+# Configuración de la cookie CSRF: HttpOnly, SameSite=Lax, 24h de vida
 COOKIE_CONFIG = {
-    "httponly": True,
-    "samesite": "lax",
-    "max_age": 86400,
-    "secure": _csrf_secure,
-    "path": "/",
+    "httponly": True,      # No accesible desde JavaScript
+    "samesite": "lax",     # Protege contra CSRF sin romper navegación normal
+    "max_age": 86400,      # 24 horas en segundos
+    "secure": _csrf_secure, # Solo enviar por HTTPS en producción
+    "path": "/",           # Disponible en toda la aplicación
 }
 
 
 def csrf_token_response(response) -> str:
-    """Genera un token CSRF, lo setea como cookie en la response y lo devuelve."""
-    token = secrets.token_hex(32)
+    """
+    Genera un token CSRF, lo setea como cookie en la response y lo devuelve.
+
+    Args:
+        response: Objeto response de FastAPI/Starlette donde se setea la cookie.
+
+    Returns:
+        str con el token generado (para insertar en formularios HTML).
+    """
+    token = secrets.token_hex(32)  # 64 caracteres hex, criptográficamente seguro
     response.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
     return token
 
 
 def validate_csrf(request: Request, csrf_token: str):
-    """Compara el token del formulario contra la cookie. Si no coinciden → 403."""
+    """
+    Valida el token CSRF comparando el token del formulario contra la cookie.
+
+    Args:
+        request: Objeto Request de FastAPI para leer cookies.
+        csrf_token: Token enviado desde el formulario HTML.
+
+    Raises:
+        HTTPException 403 si el token no coincide o falta.
+    """
     cookie_token = request.cookies.get("csrf_token")
     if not cookie_token or not csrf_token or cookie_token != csrf_token:
         raise HTTPException(status_code=403, detail="CSRF token inválido")

@@ -1,14 +1,21 @@
+{# ================================================================ #}
+{# ARCHIVO: dashboard.html                                           #}
+{# DESCRIPCIÓN: Panel admin — tabs de productos, categorías y config #}
+{# ================================================================ #}
 {% extends "base.html" %}
+{# Título dinámico con el nombre del store #}
 {% block title %}Admin — {{ store.name }}{% endblock %}
 {% block extra_head %}
 <!-- SortableJS para drag & drop de productos -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" crossorigin="anonymous"></script>
 {% endblock %}
 {% block content %}
+{# Contenedor principal reemplazado por HTMX en cada acción #}
 <div id="admin-content" class="max-w-4xl mx-auto p-4">
     <!-- Header del dashboard con nombre del store y logout -->
     <div class="flex items-center justify-between mb-6">
         <div>
+            {# Nombre del store con badge de plan #}
             <h1 class="text-xl font-bold">
                 {{ store.name }}
                 {% if store.plan == 'premium' %}
@@ -17,6 +24,7 @@
                     <span class="text-xs bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded-full ml-2">Free</span>
                 {% endif %}
             </h1>
+            {# Link público al menú del store #}
             <p class="text-sm text-gray-400">
                 Tu tienda:
                 <a href="/menu/{{ store.slug }}" target="_blank" class="text-emerald-400 hover:text-emerald-300">
@@ -25,9 +33,11 @@
             </p>
         </div>
         <div class="flex items-center gap-3">
+            {# Enlace al superadmin solo si tiene permisos #}
             {% if store.is_superadmin %}
                 <a href="/admin/super" class="text-xs bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-lg hover:bg-amber-500/30 transition">👑 Admin</a>
             {% endif %}
+            {# Formulario de cierre de sesión #}
             <form method="POST" action="/admin/logout">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button class="text-sm text-gray-400 hover:text-white transition">Cerrar sesión</button>
@@ -43,6 +53,7 @@
         <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">{{ error }}</div>
     {% endif %}
 
+    {# Banner de upgrade a Premium para usuarios free #}
     {% if store.plan == 'free' %}
     <div class="bg-gradient-to-r from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
         <div>
@@ -55,20 +66,25 @@
 
     <!-- Tabs de navegación: Productos / Categorías / Configuración -->
     <div class="flex gap-1 bg-[#1a1a1a] rounded-xl p-1 mb-6">
-        <button onclick="switchTab('productos')" id="tab-productos" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'productos' else 'text-gray-400 hover:text-white' }}">Productos</button>
-        <button onclick="switchTab('categorias')" id="tab-categorias" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'categorias' else 'text-gray-400 hover:text-white' }}">Categorías</button>
-        <button onclick="switchTab('config')" id="tab-config" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'config' else 'text-gray-400 hover:text-white' }}">Configuración</button>
+        {# Tab activo resaltado con clase bg-emerald-500 #}
+        <button data-action="switch-tab" data-tab="productos" id="tab-productos" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'productos' else 'text-gray-400 hover:text-white' }}">Productos</button>
+        <button data-action="switch-tab" data-tab="categorias" id="tab-categorias" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'categorias' else 'text-gray-400 hover:text-white' }}">Categorías</button>
+        <button data-action="switch-tab" data-tab="config" id="tab-config" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition {{ 'bg-emerald-500 text-white' if active_tab == 'config' else 'text-gray-400 hover:text-white' }}">Configuración</button>
         <a href="/admin/stats" class="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition text-center text-gray-400 hover:text-white hover:bg-white/5">📊 Stats</a>
     </div>
 
     <!-- ========== TAB: PRODUCTOS ========== -->
+    {# Panel oculto si active_tab no es 'productos' #}
     <div id="panel-productos" class="space-y-4 {{ 'hidden' if active_tab != 'productos' else '' }}">
-        <button onclick="openModal('producto-modal')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition">
+        {# Botón para abrir el modal de nuevo producto #}
+        <button data-action="open-modal" data-target="producto-modal" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition">
             + Nuevo producto
         </button>
 
+        {# Botones de exportar e importar CSV #}
         <div class="flex gap-2">
             <a href="/admin/products/export" class="flex-1 text-center bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-2.5 rounded-xl transition text-sm">Exportar CSV</a>
+            {# Formulario oculto de importación CSV activado por input file #}
             <label class="flex-1 text-center bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-2.5 rounded-xl transition text-sm cursor-pointer">
                 Importar CSV
                 <form id="import-csv-form" hx-post="/admin/products/import" hx-target="#admin-content" hx-swap="innerHTML" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="hidden">
@@ -78,6 +94,7 @@
             </label>
         </div>
 
+        {# Listado de productos existentes #}
         {% if products %}
             <!-- Formulario oculto para guardar orden drag & drop -->
             <form id="reorder-form" hx-post="/admin/products/reorder" hx-target="#admin-content" hx-swap="innerHTML" class="hidden">
@@ -87,23 +104,29 @@
             </form>
             <!-- Lista de productos agrupados por categoría (colapsables) -->
             <div id="product-list">
+            {# Iteración sobre categorías #}
             {% for cat in categories %}
                 {% set cat_prods = category_products.get(cat.id, []) %}
+                {# Solo mostrar categorías que contengan productos #}
                 {% if cat_prods %}
                 <div class="product-category-group mb-3">
+                    {# Cabecera colapsable de la categoría #}
                     <div class="flex items-center gap-2 mb-2">
-                        <button onclick="toggleCategory({{ cat.id }})" class="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition">
+                        <button data-action="toggle-category" data-id="{{ cat.id }}" class="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition">
                             <span id="cat-arrow-{{ cat.id }}" class="transition-transform duration-200" style="transform:rotate(-90deg)">▶</span>
                             <span>{{ cat.name }}</span>
                             <span class="text-xs text-gray-600 font-normal">({{ cat_prods|length }})</span>
                         </button>
                     </div>
+                    {# Cuerpo colapsable de la categoría #}
                     <div id="cat-group-{{ cat.id }}" style="display:none">
                     {% for prod in cat_prods %}
+                    {# Cada producto es un elemento arrastrable (SortableJS) #}
                     <div class="product-sort bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center gap-4 cursor-grab active:cursor-grabbing" data-id="{{ prod.id }}">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
                                 <h3 class="font-semibold">{{ prod.name }}</h3>
+                                {# Badge "Oculto" si el producto no está disponible #}
                                 {% if not prod.available %}
                                     <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Oculto</span>
                                 {% endif %}
@@ -114,6 +137,7 @@
                                 <span class="text-gray-500">{{ cat.name }}</span>
                             </div>
                         </div>
+                        {# Acciones del producto #}
                         <div class="flex items-center gap-2 shrink-0">
                             <!-- Toggle visibilidad -->
                             <form hx-post="/admin/product/{{ prod.id }}/toggle" hx-target="#admin-content" hx-swap="innerHTML">
@@ -127,14 +151,14 @@
                                 </button>
                             </form>
                             <!-- Editar (abre modal) -->
-                            <button onclick='editProduct({{ prod.id }}, {{ prod.name|tojson }}, {{ prod.description|tojson }}, {{ prod.price }}, {{ prod.category_id }}, {{ "true" if prod.available else "false" }}, {{ prod.image_url|tojson }}, {{ prod.stock or 0 }}, {{ prod.variants|tojson }})' class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
+                            <button data-edit-id="{{ prod.id }}" data-edit-name="{{ prod.name|e }}" data-edit-description="{{ prod.description|e }}" data-edit-price="{{ prod.price }}" data-edit-category="{{ prod.category_id }}" data-edit-available="{{ "true" if prod.available else "false" }}" data-edit-image="{{ prod.image_url|e }}" data-edit-stock="{{ prod.stock or 0 }}" data-edit-variants="{{ prod.variants|e }}" class="edit-btn text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
                             <!-- Duplicar -->
                             <form hx-post="/admin/product/{{ prod.id }}/duplicate" hx-target="#admin-content" hx-swap="innerHTML" style="display:inline" data-category-id="{{ prod.category_id }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button class="text-sm text-gray-400 hover:text-blue-400 transition px-2 py-1">Duplicar</button>
                             </form>
                             <!-- Eliminar con confirmación -->
-                            <form hx-post="/admin/product/{{ prod.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar {{ prod.name|tojson }}?')" style="display:inline" data-category-id="{{ prod.category_id }}">
+                            <form hx-post="/admin/product/{{ prod.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" data-confirm="¿Eliminar {{ prod.name|e }}?" style="display:inline" data-category-id="{{ prod.category_id }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
                             </form>
@@ -147,7 +171,7 @@
             {% endfor %}
             </div>
         {% else %}
-            <!-- Estado vacío -->
+            <!-- Estado vacío: no hay productos cargados -->
             <div class="text-center py-12 text-gray-500">
                 <p class="text-4xl mb-2">📦</p>
                 <p>No tenés productos todavía</p>
@@ -157,7 +181,9 @@
     </div>
 
     <!-- ========== TAB: CATEGORÍAS ========== -->
+    {# Panel oculto si active_tab no es 'categorias' #}
     <div id="panel-categorias" class="space-y-4 {{ 'hidden' if active_tab != 'categorias' else '' }}">
+        {# Formulario para crear una nueva categoría #}
         <form hx-post="/admin/category" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex gap-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="text" name="name" required placeholder="Nombre de la categoría"
@@ -165,9 +191,11 @@
             <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">Agregar</button>
         </form>
 
+        {# Listado de categorías existentes #}
         {% if categories %}
             {% for cat in categories %}
             <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 flex items-center justify-between gap-3">
+                {# Formulario inline de edición de nombre de categoría #}
                 <div class="flex-1">
                     <form id="cat-form-{{ cat.id }}" hx-post="/admin/category/{{ cat.id }}/edit" hx-target="#admin-content" hx-swap="innerHTML" class="flex items-center gap-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -175,11 +203,13 @@
                         <input id="cat-input-{{ cat.id }}" type="text" name="name" value="{{ cat.name }}" class="hidden bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500">
                     </form>
                 </div>
+                {# Acciones: editar inline, guardar, cancelar, eliminar #}
                 <div class="flex items-center gap-2 shrink-0">
-                    <button onclick="editCategory({{ cat.id }})" class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
-                    <button onclick="saveCategory({{ cat.id }})" id="cat-save-{{ cat.id }}" class="hidden text-sm text-emerald-400 hover:text-emerald-300 transition px-2 py-1">Guardar</button>
-                    <button onclick="cancelCategory({{ cat.id }})" id="cat-cancel-{{ cat.id }}" class="hidden text-sm text-gray-500 hover:text-white transition px-2 py-1">Cancelar</button>
-                    <form hx-post="/admin/category/{{ cat.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" onsubmit="return confirm('¿Eliminar ' + {{ cat.name|tojson }} + '?')">
+                    <button data-action="edit-category" data-id="{{ cat.id }}" class="text-sm text-gray-400 hover:text-emerald-400 transition px-2 py-1">Editar</button>
+                    <button data-action="save-category" data-id="{{ cat.id }}" id="cat-save-{{ cat.id }}" class="hidden text-sm text-emerald-400 hover:text-emerald-300 transition px-2 py-1">Guardar</button>
+                    <button data-action="cancel-category" data-id="{{ cat.id }}" id="cat-cancel-{{ cat.id }}" class="hidden text-sm text-gray-500 hover:text-white transition px-2 py-1">Cancelar</button>
+                    {# Eliminación con confirmación #}
+                    <form hx-post="/admin/category/{{ cat.id }}/delete" hx-target="#admin-content" hx-swap="innerHTML" data-confirm="¿Eliminar {{ cat.name|e }}?">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button class="text-sm text-gray-400 hover:text-red-400 transition px-2 py-1">Eliminar</button>
                     </form>
@@ -187,6 +217,7 @@
             </div>
             {% endfor %}
         {% else %}
+            {# Estado vacío: no hay categorías cargadas #}
             <div class="text-center py-12 text-gray-500">
                 <p class="text-4xl mb-2">📁</p>
                 <p>No tenés categorías todavía</p>
@@ -196,24 +227,26 @@
     </div>
 
     <!-- ========== TAB: CONFIGURACIÓN ========== -->
+    {# Panel oculto si active_tab no es 'config' #}
     <div id="panel-config" class="space-y-4 {{ 'hidden' if active_tab != 'config' else '' }}">
+        {# Formulario de configuración del store #}
         <form hx-post="/admin/settings" hx-target="#admin-content" hx-swap="innerHTML" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Datos básicos -->
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Nombre del comercio</label>
                 <input type="text" name="name" value="{{ store.name }}" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="form-input">
             </div>
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Email</label>
                 <input type="email" name="email" value="{{ store.email }}" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="form-input">
             </div>
             <div>
                 <label class="block text-sm text-gray-400 mb-1">WhatsApp</label>
                 <input type="text" name="whatsapp" value="{{ store.whatsapp }}" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="form-input">
             </div>
 
             <hr class="border-white/5">
@@ -221,17 +254,18 @@
             <!-- Configuración de envío -->
             <p class="text-sm text-gray-400 font-medium">🚚 Envío</p>
             <div class="space-y-3">
+                {# Checkbox que muestra/oculta el campo de precio de envío #}
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="delivery_available" value="0">
                     <input type="checkbox" name="delivery_available" value="1" {{ 'checked' if store.delivery_available else '' }}
                            onchange="document.getElementById('delivery-price-field').classList.toggle('hidden', !this.checked)"
-                           class="w-4 h-4 rounded border-white/10 bg-[#0a0a0a] text-emerald-500 focus:ring-emerald-500">
+                           class="checkbox-custom">
                     <span class="text-sm text-gray-300">Hacemos envíos</span>
                 </label>
                 <div id="delivery-price-field" class="{{ '' if store.delivery_available else 'hidden' }}">
                     <label class="block text-sm text-gray-400 mb-1">Costo de envío ($)</label>
                     <input type="number" name="delivery_price" step="0.01" min="0" value="{{ store.delivery_price or 0 }}"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="form-input">
                 </div>
             </div>
 
@@ -243,15 +277,31 @@
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Apertura</label>
                     <input type="time" name="opening_time" value="{{ store.opening_time or '' }}"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="form-input">
                 </div>
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Cierre</label>
                     <input type="time" name="closing_time" value="{{ store.closing_time or '' }}"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="form-input">
                 </div>
             </div>
             <p class="text-xs text-gray-600">Si dejás los campos vacíos, el menú estará siempre disponible. Fuera del horario, el botón de WhatsApp se deshabilita automáticamente.</p>
+
+            {# Selección de días laborales #}
+            <div class="mt-3">
+                <label class="block text-sm text-gray-400 mb-2">Días laborales</label>
+                <div class="flex flex-wrap gap-2">
+                    {% set days = [("1","Lun"),("2","Mar"),("3","Mié"),("4","Jue"),("5","Vie"),("6","Sáb"),("7","Dom")] %}
+                    {% set working = store.working_days.split(",") if store.working_days else ["1","2","3","4","5","6","7"] %}
+                    {% for val, label in days %}
+                    <label class="flex items-center gap-1.5 bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 cursor-pointer hover:border-white/20 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10">
+                        <input type="checkbox" name="working_days" value="{{ val }}" {{ 'checked' if val in working else '' }}
+                               class="w-3.5 h-3.5 rounded border-white/20 bg-[#0a0a0a] text-emerald-500 focus:ring-emerald-500">
+                        <span class="text-xs text-gray-300">{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
 
             <hr class="border-white/5">
 
@@ -261,13 +311,13 @@
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="payment_transfer" value="0">
                     <input type="checkbox" name="payment_transfer" value="1" {{ 'checked' if store.payment_transfer else '' }}
-                           class="w-4 h-4 rounded border-white/10 bg-[#0a0a0a] text-emerald-500 focus:ring-emerald-500">
+                           class="checkbox-custom">
                     <span class="text-sm text-gray-300">Transferencia</span>
                 </label>
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="payment_cash" value="0">
                     <input type="checkbox" name="payment_cash" value="1" {{ 'checked' if store.payment_cash else '' }}
-                           class="w-4 h-4 rounded border-white/10 bg-[#0a0a0a] text-emerald-500 focus:ring-emerald-500">
+                           class="checkbox-custom">
                     <span class="text-sm text-gray-300">Efectivo</span>
                 </label>
             </div>
@@ -285,7 +335,7 @@
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">URL del logo</label>
                     <input type="url" name="logo_url" value="{{ store.logo_url or '' }}" placeholder="https://ejemplo.com/logo.png"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
             </div>
 
@@ -297,16 +347,22 @@
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Contraseña actual</label>
                     <input type="password" name="current_password" placeholder="••••••"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Nueva contraseña</label>
                     <input type="password" name="new_password" placeholder="Mín. 8 caracteres"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Confirmar nueva contraseña</label>
+                    <input type="password" name="confirm_new_password" placeholder="Repetí la nueva"
+                           class="input-field">
                 </div>
             </div>
             <p class="text-xs text-gray-600">Dejá los campos de contraseña en blanco si no querés cambiarla.</p>
 
+            {# Botón de guardar cambios #}
             <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
                 Guardar cambios
             </button>
@@ -314,48 +370,56 @@
     </div>
 
 <!-- ========== MODAL: NUEVO/EDITAR PRODUCTO ========== -->
+{# Modal oculto que se muestra al hacer clic en "Nuevo producto" o "Editar" #}
 <div id="producto-modal" class="fixed inset-0 z-50 hidden bg-black/60 flex items-end sm:items-center justify-center p-4">
     <div class="bg-[#1a1a1a] rounded-2xl w-full max-w-md p-6 border border-white/5">
         <div class="flex items-center justify-between mb-4">
+            {# Título cambia entre "Nuevo producto" y "Editar producto" según el contexto #}
             <h2 class="text-lg font-bold" id="modal-title">Nuevo producto</h2>
-            <button onclick="closeModal('producto-modal')" class="text-gray-400 hover:text-white p-1">
+            {# Botón de cierre del modal #}
+            <button data-action="close-modal" data-target="producto-modal" class="text-gray-400 hover:text-white p-1">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
+        {# Formulario del modal: crea o edita producto según si hay product_id #}
         <form id="producto-form" hx-post="/admin/product" hx-target="#admin-content" hx-swap="innerHTML" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="product_id" id="product-id" value="">
 
+            {# Campo: nombre del producto #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Nombre</label>
                 <input type="text" name="name" id="product-name" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
 
+            {# Campo: descripción opcional #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Descripción (opcional)</label>
                 <input type="text" name="description" id="product-description"
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
 
+            {# Campo: URL de imagen opcional #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">URL de imagen (opcional)</label>
                 <input type="url" name="image_url" id="product-image"
                        placeholder="https://ejemplo.com/foto.jpg"
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
 
+            {# Campos: precio y categoría en fila #}
             <div class="flex gap-3">
                 <div class="flex-1">
                     <label class="block text-sm text-gray-400 mb-1">Precio ($)</label>
                     <input type="number" name="price" id="product-price" step="0.01" min="0" required
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
                 <div class="flex-1">
                     <label class="block text-sm text-gray-400 mb-1">Categoría</label>
                     <select name="category_id" id="product-category" required
-                            class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition text-sm">
+                            class="form-input">
                         {% for cat in categories %}
                         <option value="{{ cat.id }}">{{ cat.name }}</option>
                         {% endfor %}
@@ -363,31 +427,35 @@
                 </div>
             </div>
 
+            {# Campo: stock opcional #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Stock (opcional, 0 = sin límite)</label>
                 <input type="number" name="stock" id="product-stock" min="0" value="0"
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
 
+            {# Checkbox: disponible/oculto #}
             <div class="flex items-center gap-2">
                 <input type="hidden" name="available" value="0">
                 <input type="checkbox" name="available" id="product-available" value="1" checked
-                       class="w-4 h-4 rounded border-white/10 bg-[#0a0a0a] text-emerald-500 focus:ring-emerald-500">
+                       class="checkbox-custom">
                 <label for="product-available" class="text-sm text-gray-400">Disponible</label>
             </div>
 
+            {# Sección de variantes (solo Premium) #}
             <div id="variants-section" class="space-y-2">
                 <label class="block text-sm text-gray-400">Variantes (opcional, solo Premium)</label>
                 <input type="hidden" name="variants" id="product-variants" value="">
                 <div id="variants-list" class="space-y-1"></div>
-                <button type="button" onclick="addVariant()"
+                <button type="button" data-action="add-variant"
                         class="text-sm text-emerald-400 hover:text-emerald-300 transition">
                     + Agregar variante
                 </button>
             </div>
 
+            {# Botones: cancelar y guardar #}
             <div class="flex gap-3 pt-2">
-                <button type="button" onclick="closeModal('producto-modal')" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-medium py-2.5 rounded-xl transition text-sm">Cancelar</button>
+                <button type="button" data-action="close-modal" data-target="producto-modal" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-medium py-2.5 rounded-xl transition text-sm">Cancelar</button>
                 <button type="submit" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl transition text-sm">Guardar</button>
             </div>
         </form>
@@ -395,232 +463,9 @@
 </div>
 
 <!-- Script inline de restauración: se ejecuta en cada HTMX swap inmediatamente -->
-<script>
-(function(){try{var e=new Set(JSON.parse(sessionStorage.getItem('pedime_exp')||'[]'));document.querySelectorAll('[id^="cat-group-"]').forEach(function(g){var id=parseInt(g.id.replace('cat-group-','')),a=document.getElementById('cat-arrow-'+id);e.has(id)?(g.style.display='',a&&(a.style.transform='rotate(0deg)')):(g.style.display='none',a&&(a.style.transform='rotate(-90deg)'))})}catch(ex){}})();
-</script>
+
 </div>
 
-<!-- JavaScript del dashboard -->
-<script>
-    // currentVariants persistente (evita error let en re-ejecuciones)
-    var currentVariants = window._currentVariants || [];
-    window._currentVariants = currentVariants;
-
-    // Lee categorías expandidas de sessionStorage (inmune a re-ejecuciones del script)
-    function loadExpanded() {
-        try { return new Set(JSON.parse(sessionStorage.getItem('pedime_exp') || '[]')); } catch { return new Set(); }
-    }
-    function saveExpanded(set) {
-        sessionStorage.setItem('pedime_exp', JSON.stringify([...set]));
-    }
-
-    function switchTab(tab) {
-        document.getElementById('panel-productos').classList.toggle('hidden', tab !== 'productos');
-        document.getElementById('panel-categorias').classList.toggle('hidden', tab !== 'categorias');
-        document.getElementById('panel-config').classList.toggle('hidden', tab !== 'config');
-        ['productos', 'categorias', 'config'].forEach(function(t) {
-            var el = document.getElementById('tab-' + t);
-            el.className = t === tab
-                ? 'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition bg-emerald-500 text-white'
-                : 'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition text-gray-400 hover:text-white';
-        });
-    }
-
-    function openModal(id) {
-        document.getElementById(id).classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-
-    function editProduct(id, name, description, price, categoryId, available, imageUrl, stock, variants) {
-        var exp = loadExpanded();
-        exp.add(categoryId);
-        saveExpanded(exp);
-        document.getElementById('modal-title').textContent = 'Editar producto';
-        document.getElementById('product-id').value = id;
-        document.getElementById('product-name').value = name;
-        document.getElementById('product-description').value = description;
-        document.getElementById('product-price').value = price;
-        document.getElementById('product-category').value = categoryId;
-        document.getElementById('product-available').checked = available;
-        document.getElementById('product-image').value = imageUrl || '';
-        document.getElementById('product-stock').value = stock || 0;
-        try {
-            var v = JSON.parse(variants || "[]");
-            currentVariants = Array.isArray(v) ? v : [];
-        } catch {
-            currentVariants = [];
-        }
-        renderVariants();
-        openModal('producto-modal');
-    }
-
-    function resetProductForm() {
-        document.getElementById('modal-title').textContent = 'Nuevo producto';
-        document.getElementById('product-id').value = '';
-        document.getElementById('product-name').value = '';
-        document.getElementById('product-description').value = '';
-        document.getElementById('product-price').value = '';
-        document.getElementById('product-image').value = '';
-        document.getElementById('product-available').checked = true;
-        currentVariants = [];
-        renderVariants();
-    }
-
-    function addVariant() {
-        currentVariants.push({ name: "", price: 0 });
-        renderVariants();
-    }
-
-    function removeVariant(index) {
-        currentVariants.splice(index, 1);
-        renderVariants();
-    }
-
-    function renderVariants() {
-        var container = document.getElementById("variants-list");
-        if (!container) return;
-        container.innerHTML = "";
-        currentVariants.forEach(function(v, i) {
-            var row = document.createElement("div");
-            row.className = "flex gap-2 items-center";
-            var nameInput = document.createElement("input");
-            nameInput.type = "text";
-            nameInput.value = v.name;
-            nameInput.placeholder = "Nombre";
-            nameInput.className = "flex-1 bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm";
-            nameInput.onchange = function() { currentVariants[i].name = nameInput.value; syncVariants(); };
-            var priceInput = document.createElement("input");
-            priceInput.type = "number";
-            priceInput.value = v.price;
-            priceInput.placeholder = "Precio";
-            priceInput.min = "0";
-            priceInput.step = "0.01";
-            priceInput.className = "w-24 bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm";
-            priceInput.onchange = function() { currentVariants[i].price = Number(priceInput.value); syncVariants(); };
-            var removeBtn = document.createElement("button");
-            removeBtn.type = "button";
-            removeBtn.className = "text-red-400 hover:text-red-300 text-sm px-2";
-            removeBtn.textContent = "✕";
-            removeBtn.onclick = function() { removeVariant(i); };
-            row.appendChild(nameInput);
-            row.appendChild(priceInput);
-            row.appendChild(removeBtn);
-            container.appendChild(row);
-        });
-        syncVariants();
-    }
-
-    function syncVariants() {
-        var el = document.getElementById("product-variants");
-        if (el) {
-            el.value = currentVariants.length ? JSON.stringify(currentVariants) : "";
-        }
-    }
-
-    function editCategory(id) {
-        document.getElementById('cat-name-' + id).classList.add('hidden');
-        document.getElementById('cat-input-' + id).classList.remove('hidden');
-        document.getElementById('cat-input-' + id).focus();
-        document.getElementById('cat-save-' + id).classList.remove('hidden');
-        document.getElementById('cat-cancel-' + id).classList.remove('hidden');
-    }
-
-    function saveCategory(id) {
-        document.getElementById('cat-form-' + id).submit();
-    }
-
-    function cancelCategory(id) {
-        document.getElementById('cat-name-' + id).classList.remove('hidden');
-        document.getElementById('cat-input-' + id).classList.add('hidden');
-        document.getElementById('cat-input-' + id).value = document.getElementById('cat-name-' + id).textContent.trim();
-        document.getElementById('cat-save-' + id).classList.add('hidden');
-        document.getElementById('cat-cancel-' + id).classList.add('hidden');
-    }
-
-    function toggleCategory(id) {
-        var exp = loadExpanded();
-        var group = document.getElementById('cat-group-' + id);
-        var arrow = document.getElementById('cat-arrow-' + id);
-        if (!group) return;
-        var isHidden = group.style.display === 'none';
-        group.style.display = isHidden ? '' : 'none';
-        arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
-        if (isHidden) exp.add(id);
-        else exp.delete(id);
-        saveExpanded(exp);
-    }
-
-    // Inicialización única (solo se ejecuta en la primera carga de página)
-    if (!window._dashboardInit) {
-        window._dashboardInit = true;
-
-        // Cerrar modal al hacer clic fuera
-        document.getElementById('producto-modal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal('producto-modal');
-        });
-
-        // Resetear formulario al abrir modal para nuevo producto
-        document.querySelector('[onclick="openModal(\'producto-modal\')"]').addEventListener('click', function() {
-            setTimeout(resetProductForm, 10);
-        });
-
-        // Enter/Escape para edición de categoría
-        document.querySelectorAll('[id^="cat-input-"]').forEach(function(input) {
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') { e.preventDefault(); saveCategory(parseInt(this.id.replace('cat-input-', ''))); }
-                if (e.key === 'Escape') { cancelCategory(parseInt(this.id.replace('cat-input-', ''))); }
-            });
-        });
-
-        // Capturar category_id antes de requests HTMX
-        document.addEventListener('htmx:beforeRequest', function(e) {
-            window._savedScroll = window.scrollY;
-            var elt = e.detail.elt;
-            var form = elt.tagName === 'FORM' ? elt : elt.closest('form');
-            if (!form) return;
-            var catId = null;
-            if (form.id === 'producto-form') {
-                var sel = form.querySelector('[name="category_id"]');
-                if (sel) catId = parseInt(sel.value);
-            }
-            if (form.dataset.categoryId) {
-                catId = parseInt(form.dataset.categoryId);
-            }
-            if (catId && !isNaN(catId)) {
-                var exp = loadExpanded();
-                exp.add(catId);
-                saveExpanded(exp);
-            }
-        });
-
-        // Preservar scroll y cerrar modal tras swap
-        document.addEventListener('htmx:afterSwap', function(e) {
-            window.scrollTo(0, window._savedScroll || 0);
-            closeModal('producto-modal');
-        });
-
-        // SortableJS: drag & drop para reordenar productos
-        try {
-            var productList = document.getElementById('product-list');
-            if (productList) {
-                new Sortable(productList, {
-                    animation: 200,
-                    handle: '.product-sort',
-                    onEnd: function() {
-                        var ids = Array.from(productList.querySelectorAll('.product-sort')).map(function(el) { return el.dataset.id; });
-                        document.getElementById('product-order-input').value = ids.join(',');
-                        document.getElementById('save-order-btn').closest('form').classList.remove('hidden');
-                    }
-                });
-            }
-        } catch (e) {
-            console.warn("SortableJS no disponible, drag & drop desactivado:", e);
-        }
-    }
-</script>
+{# Script del dashboard: manejo de modales, tabs, drag & drop, etc. #}
+<script src="/static/js/dashboard.js?v=1"></script>
 {% endblock %}

@@ -64,14 +64,14 @@ class TestAuthSecurity:
     def test_csrf_missing_returns_422(self, client):
         """POST sin csrf_token debe devolver 422 (validation error de FastAPI)."""
         resp = client.post("/login", data={
-            "email": "test@test.com", "password": "Test1234",
+            "email": "test@test.com", "password": "Test1234!",
         })
         assert resp.status_code == 422
 
     def test_csrf_wrong_returns_403(self, client):
         """POST con csrf_token incorrecto debe devolver 403."""
         resp = client.post("/login", data={
-            "email": "test@test.com", "password": "Test1234",
+            "email": "test@test.com", "password": "Test1234!",
             "csrf_token": "x" * 64,
         })
         assert resp.status_code == 403
@@ -115,7 +115,7 @@ class TestSQLInjection:
         csrf = _csrf(client, "/login")
         resp = client.post("/login", data={
             "email": "' OR '1'='1",
-            "password": "Test1234",
+            "password": "Test1234!",
             "csrf_token": csrf,
         })
         assert resp.status_code == 200
@@ -191,7 +191,7 @@ class TestRateLimiting:
             assert csrf, "No CSRF token"
             resp = client.post("/register", data={
                 "name": f"Test{i}", "email": f"test{i}@test.com",
-                "password": "Test1234", "confirm_password": "Test1234",
+                "password": "Test1234!", "confirm_password": "Test1234!",
                 "whatsapp": "5491134567890", "slug": f"test-store-{i}",
                 "csrf_token": csrf.group(1),
             }, follow_redirects=False)

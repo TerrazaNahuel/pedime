@@ -28,7 +28,7 @@ def _make_premium(db, store_id):
         store.plan = "premium"
         db.commit()
 
-def _login(client, email="test@test.com", password="Test1234"):
+def _login(client, email="test@test.com", password="Test1234!"):
     """Helper: inicia sesión como seed_store y devuelve token CSRF del dashboard."""
     csrf, resp = _csrf(client, "/login")
     resp = client.post("/login", data={
@@ -90,9 +90,10 @@ class TestProducts:
         }, follow_redirects=False)
         csrf = _csrf(client, "/admin/dashboard")[0]
 
-        resp = client.post("/admin/product/1/edit", data={
+        resp = client.post("/admin/product", data={
             "name": "Edited", "description": "Nueva desc",
             "price": "200", "category_id": "1",
+            "product_id": "1",
             "available": "1", "image_url": "",
             "csrf_token": csrf,
         }, follow_redirects=False)
@@ -246,9 +247,10 @@ class TestProducts:
         }, follow_redirects=False)
         csrf = _csrf(client, "/admin/dashboard")[0]
 
-        resp = client.post("/admin/product/1/edit", data={
+        resp = client.post("/admin/product", data={
             "name": "Edited", "description": "",
             "price": "200", "category_id": "1",
+            "product_id": "1",
             "available": "1", "image_url": "",
             "variants": '[{"name":"Triple","price":300}]',
             "csrf_token": csrf,
@@ -438,7 +440,8 @@ class TestSettings:
             "delivery_available": "1", "delivery_price": "0",
             "payment_transfer": "1", "payment_cash": "1",
             "primary_color": "#10b981", "logo_url": "",
-            "current_password": "Test1234", "new_password": "NewPass123",
+            "current_password": "Test1234!", "new_password": "NewPass123!",
+            "confirm_new_password": "NewPass123!",
             "csrf_token": csrf,
         }, follow_redirects=False)
         assert resp.status_code == 200

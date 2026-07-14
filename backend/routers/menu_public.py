@@ -31,6 +31,7 @@ def get_menu_html():
     menu_path = os.path.join(FRONTEND_DIR, "menu.html")
     if not os.path.exists(menu_path):
         raise HTTPException(status_code=404, detail="Página de menú no encontrada")
+    # Compara el mtime para invalidar el caché si el archivo se modificó
     current_mtime = os.path.getmtime(menu_path)
     if _menu_html_cache is None or current_mtime > _menu_html_mtime:
         with open(menu_path, encoding="utf-8") as f:
@@ -108,5 +109,6 @@ def get_menu(slug: str, db: Session = Depends(get_db)):
         logo_url=store.logo_url or "",
         opening_time=store.opening_time or "",
         closing_time=store.closing_time or "",
+        working_days=store.working_days or "1,2,3,4,5,6,7",
         categories=categories_out,
     )

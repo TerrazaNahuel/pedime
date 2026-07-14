@@ -1,51 +1,96 @@
 """
-Rate limiter en memoria para prevenir abuso de endpoints críticos (login, register).
+Rate limiter con respaldo en base de datos para compartir estado entre workers.
 
-Almacena timestamps por clave (ej: "login:192.168.1.1") y rechaza si se
-supera el límite en la ventana de tiempo configurada.
+En producción con PostgreSQL, todos los workers comparten la misma tabla,
+por lo que los límites se aplican globalmente.
 """
 
-import threading
-import time
-from collections import defaultdict
+import logging
+from datetime import UTC, datetime, timedelta
+
+from database import SessionLocal
+from models import RateLimitEntry
+from sqlalchemy import delete
+
+logger = logging.getLogger("pedime.ratelimit")
 
 
 class RateLimiter:
     """
-    Rate limiter simple en memoria. No persiste entre reinicios del servidor.
+    Rate limiter basado en base de datos, compartido entre workers via DB.
 
-    Advertencia: el estado vive solo en este proceso. Si la app se escala a
-    múltiples workers (gunicorn, uvicorn --workers N), cada worker tiene su
-    propio contador, por lo que el límite real podría ser hasta N veces mayor.
-    Railway usa un solo worker por defecto, así que no es un problema en producción.
+    En cada check(), inserta un registro y cuenta los registros activos
+    en la ventana de tiempo. Los registros viejos se eliminan periódicamente
+    para evitar que la tabla crezca indefinidamente.
+
+    Nota: usa SessionLocal() directo porque es un helper standalone,
+    no un endpoint de FastAPI que pueda usar Depends(get_db).
     """
 
     def __init__(self):
-        self._lock = threading.Lock()
-        self.attempts = defaultdict(list)
+        # Contador para ejecutar limpieza de registros viejos cada 100 check()
         self._cleanup_counter = 0
 
     def check(self, key: str, max_attempts: int, window_seconds: int = 60) -> bool:
-        now = time.time()
-        with self._lock:
-            self.attempts[key] = [t for t in self.attempts[key] if now - t < window_seconds]
-            if len(self.attempts[key]) >= max_attempts:
+        """
+        Verifica si la clave key puede ejecutar la acción.
+
+        Cuenta los intentos registrados dentro de la ventana de tiempo.
+        Si no supera el límite, registra un nuevo intento.
+
+        Args:
+            key: Identificador único (ej. "login:1.2.3.4").
+            max_attempts: Máximo de intentos permitidos en la ventana.
+            window_seconds: Duración de la ventana en segundos (default 60).
+
+        Returns:
+            True si la acción está permitida, False si se excedió el límite.
+        """
+        db = SessionLocal()
+        try:
+            # Límite inferior de la ventana de tiempo
+            cutoff = datetime.now(UTC) - timedelta(seconds=window_seconds)
+
+            # Cuenta los intentos registrados dentro de la ventana vigente
+            count = db.query(RateLimitEntry).filter(
+                RateLimitEntry.key == key,
+                RateLimitEntry.attempted_at > cutoff,
+            ).count()
+
+            # Si alcanzó el límite, rechaza la acción
+            if count >= max_attempts:
                 return False
-            self.attempts[key].append(now)
+
+            # Registra el nuevo intento
+            db.add(RateLimitEntry(key=key, attempted_at=datetime.now(UTC)))
+            db.commit()
+
+            # Limpieza periódica: cada 100 check() elimina registros expirados
             self._cleanup_counter += 1
             if self._cleanup_counter >= 100:
                 self._cleanup_counter = 0
-                self._remove_stale_keys()
-        return True
+                self._remove_stale_keys(db, cutoff)
 
-    def _remove_stale_keys(self):
-        """Elimina keys sin intentos activos para evitar memory leak."""
-        now = time.time()
-        stale = [k for k, v in self.attempts.items() if not v]
-        for k in stale:
-            del self.attempts[k]
+            return True
+        finally:
+            db.close()
+
+    def _remove_stale_keys(self, db, cutoff):
+        """Elimina registros anteriores al cutoff para mantener la tabla liviana."""
+        try:
+            db.execute(
+                delete(RateLimitEntry).where(RateLimitEntry.attempted_at <= cutoff)
+            )
+            db.commit()
+        except Exception as e:
+            logger.warning("Error limpiando rate limit entries: %s", e)
+            db.rollback()
 
     def clear(self):
-        """Resetea todos los intentos. Útil en tests."""
-        with self._lock:
-            self.attempts.clear()
+        """Elimina todos los registros de rate limiting (reset completo)."""
+        db = SessionLocal()
+        try:
+            db.execute(delete(RateLimitEntry))
+            db.commit()
+        finally:
+            db.close()

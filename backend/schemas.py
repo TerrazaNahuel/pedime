@@ -4,8 +4,9 @@ Schemas Pydantic para serialización de la API pública del menú.
 Define la estructura JSON que se sirve en /api/menu/{slug}.
 """
 
+from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 
 class ProductOut(BaseModel):
@@ -15,12 +16,17 @@ class ProductOut(BaseModel):
     id: int
     name: str
     description: str
-    price: float  # Serializado desde Decimal de la DB
+    price: Decimal
     available: bool
-    stock: int = 0  # 0 = sin límite
+    stock: int = 0
     image_url: str = ""
     category_id: int
-    variants: str = ""  # JSON string con variantes del producto
+    variants: str = ""
+
+    @field_serializer("price")
+    @classmethod
+    def serialize_price(cls, v: Decimal) -> float:
+        return round(float(v), 2)
 
 
 class CategoryOut(BaseModel):
@@ -40,11 +46,17 @@ class MenuResponse(BaseModel):
     store_slug: str
     whatsapp: str
     delivery_available: bool
-    delivery_price: float
+    delivery_price: Decimal
     payment_transfer: bool
     payment_cash: bool
     primary_color: str = "#10b981"
     logo_url: str = ""
     opening_time: str = ""
     closing_time: str = ""
+    working_days: str = "1,2,3,4,5,6,7"
     categories: list[CategoryOut]
+
+    @field_serializer("delivery_price")
+    @classmethod
+    def serialize_delivery_price(cls, v: Decimal) -> float:
+        return round(float(v), 2)

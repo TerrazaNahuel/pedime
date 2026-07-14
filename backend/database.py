@@ -8,11 +8,15 @@ Soporta dos modos:
 
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Usa DATABASE_URL de Railway si existe, sino SQLite local
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+# ──────────────────────────────────────────────────
+# Configuración del engine según el tipo de DB
+# ──────────────────────────────────────────────────
 
 if DATABASE_URL:
     # PostgreSQL (Render/Railway) o SQLite en tests
@@ -44,6 +48,8 @@ def get_db():
     """Dependencia de FastAPI que provee una sesión de DB por request."""
     db = SessionLocal()
     try:
+        if db.bind.engine.name == "sqlite":
+            db.execute(text("PRAGMA foreign_keys = ON"))
         yield db
     finally:
         db.close()

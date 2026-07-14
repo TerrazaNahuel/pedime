@@ -108,33 +108,33 @@
 
 ---
 
-## FASE 6 — Personalización de Productos (Variantes) 🔨
+## FASE 6 — Personalización de Productos (Variantes) ✅
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 69 | Migración DB: columna `variants` en products (JSON) | ⏳ |
-| 70 | Modelo: campo `variants` en Product | ⏳ |
-| 71 | Schema: `variants` en ProductOut (API pública) | ⏳ |
-| 72 | Admin API: crear/editar producto con variantes | ⏳ |
-| 73 | Admin API: validación de variantes (JSON, nombres, precios, límites) | ⏳ |
-| 74 | Admin API: plan Premium requerido para variantes | ⏳ |
-| 75 | Admin UI: modal con editor de variantes (agregar/quitar filas) | ⏳ |
-| 76 | Menú público: selector de variante por producto (select/radio) | ⏳ |
-| 77 | Carrito: mostrar variante seleccionada en nombre y precio | ⏳ |
-| 78 | WhatsApp: incluir variante en el mensaje | ⏳ |
-| 79 | CSV export/import con columna variants | ⏳ |
-| 80 | Tests: crear, editar, validar variantes en API | ⏳ |
+| 69 | Migración DB: columna `variants` en products (JSON) | ✅ |
+| 70 | Modelo: campo `variants` en Product | ✅ |
+| 71 | Schema: `variants` en ProductOut (API pública) | ✅ |
+| 72 | Admin API: crear/editar producto con variantes | ✅ |
+| 73 | Admin API: validación de variantes (JSON, nombres, precios, límites) | ✅ |
+| 74 | Admin API: plan Premium requerido para variantes | ✅ |
+| 75 | Admin UI: modal con editor de variantes (agregar/quitar filas) | ✅ |
+| 76 | Menú público: selector de variante por producto (select/radio) | ✅ |
+| 77 | Carrito: mostrar variante seleccionada en nombre y precio | ✅ |
+| 78 | WhatsApp: incluir variante en el mensaje | ✅ |
+| 79 | CSV export/import con columna variants | ✅ |
+| 80 | Tests: crear, editar, validar variantes en API | ✅ |
 
 ---
 
-## FASE 7 — Pagos y Facturación ⏳
+## FASE 7 — Pagos y Facturación 🔨
 
 | # | Feature | Estado |
 |---|---------|--------|
-| 81 | Integración con Mercado Pago (preferencias + webhook) | ⏳ |
+| 81 | Integración con Mercado Pago (preferencias + webhook) | ✅ |
 | 82 | QR para transferencia bancaria (CBU/alias) | ⏳ |
 | 83 | Factura electrónica / comprobante simple | ⏳ |
-| 84 | Cobro con tarjeta (Mercado Pago Checkout API) | ⏳ |
+| 84 | Cobro con tarjeta (Mercado Pago Checkout API) | ✅ |
 
 ---
 
@@ -181,6 +181,6 @@
 
 **Leyenda:** ✅ Completado | ⏳ Pendiente | 🔨 En progreso | ❌ Eliminado
 
-**Resumen:** 68 completadas · 26 pendientes · 1 eliminada
+**Resumen:** 82 completadas · 12 pendientes · 1 eliminada
 
 Última actualización: 06/07/2026

@@ -16,10 +16,11 @@ from fastapi.responses import RedirectResponse
 from models import Store
 from passlib.hash import bcrypt
 from ratelimit import RateLimiter
-from routers.admin_base import templates
+from routers.admin_base import get_client_ip, templates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from backend.password import validate_password
 from backend.settings import (
     LOGIN_MAX_ATTEMPTS,
     LOGIN_WINDOW_SECONDS,
@@ -72,11 +73,13 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), c
     Rate limit: 5 intentos por minuto por IP.
     """
     validate_csrf(request, csrf_token)
-    ip = request.client.host if request.client else "unknown"
+    email = email.lower().strip()
+    ip = get_client_ip(request)
     if not rate_limiter.check(f"login:{ip}", max_attempts=LOGIN_MAX_ATTEMPTS, window_seconds=LOGIN_WINDOW_SECONDS):
         logger.warning("Rate limit excedido para login ip=%s", ip)
         raise HTTPException(status_code=429, detail="Demasiados intentos. Esperá un minuto.")
     store = db.query(Store).filter(Store.email == email).first()
+    # Usa bcrypt.verify para comparación segura contra timing attacks
     if not store or not bcrypt.verify(password, store.password_hash):
         logger.warning("Login fallido para email=%s desde %s", redact_email(email), request.client.host if request.client else "?")
         token = secrets.token_hex(32)
@@ -90,7 +93,10 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), c
     request.session.clear()
     request.session["authenticated"] = True
     request.session["store_id"] = store.id
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    token = secrets.token_hex(32)
+    resp = RedirectResponse(url="/admin/dashboard", status_code=302)
+    resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
+    return resp
 
 
 @router.get("/register")
@@ -134,7 +140,7 @@ def register(
         resp.set_cookie(key="csrf_token", value=token, **COOKIE_CONFIG)
         return resp
 
-    ip = request.client.host if request.client else "unknown"
+    ip = get_client_ip(request)
     if not rate_limiter.check(f"register:{ip}", max_attempts=REGISTER_MAX_ATTEMPTS, window_seconds=REGISTER_WINDOW_SECONDS):
         logger.warning("Rate limit excedido para register ip=%s", ip)
         return render_error("Demasiados registros. Esperá 5 minutos.")
@@ -142,16 +148,11 @@ def register(
     # Validaciones de contraseña
     if password != confirm_password:
         return render_error("Las contraseñas no coinciden")
-    if len(password) < 8:
-        return render_error("La contraseña debe tener al menos 8 caracteres")
-    if not re.search(r"[A-Z]", password):
-        return render_error("La contraseña debe tener al menos una mayúscula")
-    if not re.search(r"[a-z]", password):
-        return render_error("La contraseña debe tener al menos una minúscula")
-    if not re.search(r"\d", password):
-        return render_error("La contraseña debe tener al menos un número")
-    if len(password) > 128:
-        return render_error("La contraseña es demasiado larga (máx. 128 caracteres)")
+    pw_err = validate_password(password)
+    if pw_err:
+        return render_error(pw_err)
+
+    email = email.lower().strip()
 
     # Validaciones de datos del comercio
     if len(name) > 100:
@@ -173,29 +174,20 @@ def register(
     if not final_slug:
         return render_error("El slug no puede estar vacío")
 
-    # Verifica unicidad de email y slug (atómicos en la DB con unique constraints)
-    if db.query(Store).filter(Store.email == email).first():
-        return render_error("Ya existe una cuenta con ese email")
-    if db.query(Store).filter(Store.slug == final_slug).first():
-        return render_error("Ese slug ya está en uso. Elegí otro.")
-
     # Crea el store y lo autentica automáticamente
     store = Store(
         name=name,
         slug=final_slug,
         email=email,
         password_hash=bcrypt.hash(password),
-        whatsapp=whatsapp,
+        whatsapp=re.sub(r"\D", "", whatsapp),
     )
     db.add(store)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        existing_email = db.query(Store).filter(Store.email == email).first()
-        if existing_email:
-            return render_error("Ya existe una cuenta con ese email")
-        return render_error("Ese slug ya está en uso. Elegí otro.")
+        return render_error("El email o slug ya está en uso")
 
     logger.info("Registro exitoso store_id=%s slug=%s email=%s", store.id, final_slug, redact_email(email))
     # Regenera la sesión

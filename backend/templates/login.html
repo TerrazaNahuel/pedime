@@ -1,13 +1,19 @@
+{# ============================================================ #}
+{# ARCHIVO: login.html                                           #}
+{# DESCRIPCIÓN: Formulario de inicio de sesión                   #}
+{# ============================================================ #}
 {% extends "base.html" %}
+{# Título de la página de login #}
 {% block title %}Iniciar sesión — Pedime{% endblock %}
 {% block content %}
 <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-    <!-- Imagen de fondo decorativa -->
+    <!-- Imagen de fondo decorativa (marca de agua) -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden select-none">
         <img src="/static/img/logo.png" alt="" class="absolute -bottom-10 -right-10 w-[400px] md:w-[600px] opacity-[0.03]">
     </div>
 
     <div class="w-full max-w-sm relative z-10">
+        <!-- Enlace para volver a la landing page -->
         <a href="/" class="text-sm text-gray-500 hover:text-white transition flex items-center gap-1 mb-6">
             ← Volver al inicio
         </a>
@@ -15,26 +21,30 @@
             <a href="/" class="text-2xl font-bold text-emerald-400">Pedime</a>
             <p class="text-gray-400 mt-1">Accedé a tu panel</p>
         </div>
-        <!-- Formulario de login con CSRF -->
+        <!-- Formulario de login con token CSRF -->
         <form method="POST" action="/login" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {# Mensaje de error si las credenciales son incorrectas #}
             {% if error %}
                 <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2">{{ error }}</div>
             {% endif %}
+            {# Campo de email #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Email</label>
                 <input type="email" name="email" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
+            {# Campo de contraseña #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Contraseña</label>
                 <input type="password" name="password" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
-
+            {# Botón de envío del formulario #}
             <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
                 Ingresar
             </button>
+            {# Enlace a la página de registro #}
             <p class="text-center text-sm text-gray-500">
                 ¿No tenés cuenta?
                 <a href="/register" class="text-emerald-400 hover:text-emerald-300">Crear cuenta</a>

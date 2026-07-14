@@ -1,4 +1,9 @@
+{# ============================================================ #}
+{# ARCHIVO: register.html                                        #}
+{# DESCRIPCIÓN: Formulario de registro de nueva tienda           #}
+{# ============================================================ #}
 {% extends "base.html" %}
+{# Título de la página de registro #}
 {% block title %}Crear cuenta — Pedime{% endblock %}
 {% block content %}
 <div class="min-h-screen flex items-center justify-center p-4">
@@ -10,29 +15,30 @@
         <!-- Formulario de registro con CSRF -->
         <form method="POST" action="/register" class="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5 space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {# Mensaje de error si falla el registro #}
             {% if error %}
                 <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2">{{ error }}</div>
             {% endif %}
-
+            {# Campo: nombre del comercio #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Nombre del comercio</label>
                 <input type="text" name="name" required
-                       class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                       class="input-field">
             </div>
-
+            {# Campos: email y WhatsApp en fila #}
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Email</label>
                     <input type="email" name="email" required
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">WhatsApp</label>
                     <input type="text" name="whatsapp" required placeholder="5491134567890"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
             </div>
-
+            {# Campo: slug con prefijo de URL fijo #}
             <div>
                 <label class="block text-sm text-gray-400 mb-1">Slug (link de tu tienda)</label>
                 <div class="flex items-center gap-2 bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-500">
@@ -41,24 +47,24 @@
                            class="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none border-none p-0">
                 </div>
             </div>
-
+            {# Campos: contraseña y confirmación en fila #}
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Contraseña</label>
                     <input type="password" name="password" required minlength="8"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Confirmar</label>
                     <input type="password" name="confirm_password" required minlength="8"
-                           class="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                           class="input-field">
                 </div>
             </div>
-
+            {# Botón de envío del formulario #}
             <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
                 Crear cuenta
             </button>
-
+            {# Enlace a la página de login #}
             <p class="text-center text-sm text-gray-500">
                 ¿Ya tenés cuenta?
                 <a href="/login" class="text-emerald-400 hover:text-emerald-300">Iniciar sesión</a>

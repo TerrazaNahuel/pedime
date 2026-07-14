@@ -15,8 +15,8 @@ from fastapi.responses import RedirectResponse
 from models import Category, PageView, Product, WhatsAppClick
 from ratelimit import RateLimiter
 from routers import admin_categories, admin_products, admin_settings
-from routers.admin_base import get_authenticated_store, logger, templates
-from sqlalchemy import func as db_func
+from routers.admin_base import get_authenticated_store, get_client_ip, logger, templates
+from sqlalchemy import Column, DateTime, func as db_func
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -45,17 +45,20 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
     week_start = today_start - timedelta(days=now.weekday())
     month_start = today_start.replace(day=1)
 
-    # Page views
-    views_total = db.query(db_func.count(PageView.id)).filter(PageView.store_id == store.id).scalar() or 0
-    views_today = db.query(db_func.count(PageView.id)).filter(PageView.store_id == store.id, PageView.viewed_at >= today_start).scalar() or 0
-    views_week = db.query(db_func.count(PageView.id)).filter(PageView.store_id == store.id, PageView.viewed_at >= week_start).scalar() or 0
-    views_month = db.query(db_func.count(PageView.id)).filter(PageView.store_id == store.id, PageView.viewed_at >= month_start).scalar() or 0
+    def _agg_stats(model: type, time_col: Column) -> dict:
+        """Agrega estadísticas de un modelo (PageView o WhatsAppClick) en una sola query."""
+        row = db.query(
+            db_func.count(model.id).label("total"),
+            db_func.sum(db_func.case((time_col >= today_start, 1), else_=0)).label("today"),
+            db_func.sum(db_func.case((time_col >= week_start, 1), else_=0)).label("week"),
+            db_func.sum(db_func.case((time_col >= month_start, 1), else_=0)).label("month"),
+        ).filter(model.store_id == store.id).first()
+        return {"total": row.total or 0, "today": row.today or 0, "week": row.week or 0, "month": row.month or 0}
 
-    # WhatsApp clicks
-    clicks_total = db.query(db_func.count(WhatsAppClick.id)).filter(WhatsAppClick.store_id == store.id).scalar() or 0
-    clicks_today = db.query(db_func.count(WhatsAppClick.id)).filter(WhatsAppClick.store_id == store.id, WhatsAppClick.clicked_at >= today_start).scalar() or 0
-    clicks_week = db.query(db_func.count(WhatsAppClick.id)).filter(WhatsAppClick.store_id == store.id, WhatsAppClick.clicked_at >= week_start).scalar() or 0
-    clicks_month = db.query(db_func.count(WhatsAppClick.id)).filter(WhatsAppClick.store_id == store.id, WhatsAppClick.clicked_at >= month_start).scalar() or 0
+    views = _agg_stats(PageView, PageView.viewed_at)
+    clicks = _agg_stats(WhatsAppClick, WhatsAppClick.clicked_at)
+    views_total, views_today, views_week, views_month = views["total"], views["today"], views["week"], views["month"]
+    clicks_total, clicks_today, clicks_week, clicks_month = clicks["total"], clicks["today"], clicks["week"], clicks["month"]
 
     conversion = (clicks_total / views_total * 100) if views_total > 0 else 0
 
@@ -107,7 +110,8 @@ def admin_dashboard(request: Request, msg: str = "", err: str = "", tab: str = "
 def admin_logout(request: Request, csrf_token: str = Form(...)):
     """Cierra la sesión del admin y redirige al inicio."""
     validate_csrf(request, csrf_token)
-    if not logout_limiter.check(f"logout:{request.client.host}", 10, 60):
+    # Rate limit: máximo 10 logout por minuto por IP
+    if not logout_limiter.check(f"logout:{get_client_ip(request)}", 10, 60):
         return RedirectResponse(url="/admin/dashboard", status_code=429)
     store_id = request.session.get("store_id")
     logger.info("Logout store_id=%s", store_id)

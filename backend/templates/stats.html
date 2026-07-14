@@ -1,7 +1,14 @@
+{# ============================================================ #}
+{# ARCHIVO: stats.html                                           #}
+{# DESCRIPCIÓN: Estadísticas de visitas y pedidos del store      #}
+{# ============================================================ #}
 {% extends "base.html" %}
+{# Título de la página de estadísticas #}
 {% block title %}Estadísticas — {{ store.name }}{% endblock %}
+{% block extra_head %}<script src="/static/js/dashboard.js?v=1"></script>{% endblock %}
 {% block content %}
 <div id="admin-content" class="max-w-4xl mx-auto p-4">
+    <!-- Encabezado con título y enlace de vuelta al dashboard -->
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-xl font-bold">📊 Estadísticas</h1>
@@ -13,48 +20,49 @@
     <!-- Grid de tarjetas: Visitas -->
     <p class="text-sm text-gray-400 font-medium mb-3">👁️ Visitas al menú</p>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
+        <div class="stat-card">
             <p class="text-2xl font-bold text-emerald-400">{{ "{:,}".format(views_today) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Hoy</p>
+            <p class="stat-label">Hoy</p>
         </div>
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
-            <p class="text-2xl font-bold text-white">{{ "{:,}".format(views_week) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Esta semana</p>
+        <div class="stat-card">
+            <p class="stat-value">{{ "{:,}".format(views_week) }}</p>
+            <p class="stat-label">Esta semana</p>
         </div>
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
-            <p class="text-2xl font-bold text-white">{{ "{:,}".format(views_month) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Este mes</p>
+        <div class="stat-card">
+            <p class="stat-value">{{ "{:,}".format(views_month) }}</p>
+            <p class="stat-label">Este mes</p>
         </div>
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
-            <p class="text-2xl font-bold text-white">{{ "{:,}".format(views_total) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Total</p>
+        <div class="stat-card">
+            <p class="stat-value">{{ "{:,}".format(views_total) }}</p>
+            <p class="stat-label">Total</p>
         </div>
     </div>
 
     <!-- Grid de tarjetas: WhatsApp clicks -->
     <p class="text-sm text-gray-400 font-medium mb-3">💬 Pedidos por WhatsApp</p>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
+        <div class="stat-card">
             <p class="text-2xl font-bold text-emerald-400">{{ "{:,}".format(clicks_today) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Hoy</p>
+            <p class="stat-label">Hoy</p>
         </div>
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
-            <p class="text-2xl font-bold text-white">{{ "{:,}".format(clicks_week) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Esta semana</p>
+        <div class="stat-card">
+            <p class="stat-value">{{ "{:,}".format(clicks_week) }}</p>
+            <p class="stat-label">Esta semana</p>
         </div>
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
-            <p class="text-2xl font-bold text-white">{{ "{:,}".format(clicks_month) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Este mes</p>
+        <div class="stat-card">
+            <p class="stat-value">{{ "{:,}".format(clicks_month) }}</p>
+            <p class="stat-label">Este mes</p>
         </div>
-        <div class="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 text-center">
-            <p class="text-2xl font-bold text-white">{{ "{:,}".format(clicks_total) }}</p>
-            <p class="text-xs text-gray-500 mt-1">Total</p>
+        <div class="stat-card">
+            <p class="stat-value">{{ "{:,}".format(clicks_total) }}</p>
+            <p class="stat-label">Total</p>
         </div>
     </div>
 
     <!-- Tarjeta de conversión -->
     <div class="bg-[#1a1a1a] rounded-xl p-6 border border-white/5 text-center max-w-xs mx-auto">
         <p class="text-sm text-gray-400 mb-1">📈 Conversión (clics / visitas)</p>
+        {# Color según el porcentaje de conversión #}
         <p class="text-3xl font-bold {{ 'text-emerald-400' if conversion >= 10 else 'text-yellow-400' if conversion >= 5 else 'text-gray-400' }}">
             {{ "%.1f"|format(conversion) }}%
         </p>
@@ -63,6 +71,7 @@
         </p>
     </div>
 
+    {# Sección de upgrade a premium solo para planes free #}
     {% if store.plan == 'free' %}
     <!-- Sección de upgrade a premium -->
     <div id="premium" class="mt-10 bg-gradient-to-br from-purple-900/20 to-purple-800/10 rounded-2xl p-6 border border-purple-500/20 text-center">
@@ -82,8 +91,12 @@
                 <p class="text-xs text-gray-600 mt-1">$7.500/mes</p>
             </div>
         </div>
-        <p class="text-xs text-gray-600 mb-4">Próximamente: pago con Mercado Pago. Mientras tanto, contactanos para activar tu plan premium.</p>
-        <a href="mailto:soporte@pedime.ar?subject=Quiero%20Premium" class="inline-block bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">Solicitar Premium</a>
+        <p class="text-xs text-gray-600 mb-4">Pago 100% seguro con Mercado Pago.</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            {# Botones de pago con Mercado Pago #}
+            <button data-action="start-payment" data-plan="monthly" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">Pagar Mensual</button>
+            <button data-action="start-payment" data-plan="yearly" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">Pagar Anual (ahorrá 25%)</button>
+        </div>
     </div>
     {% endif %}
 </div>

@@ -1,0 +1,19 @@
+{# ============================================================ #}
+{# ARCHIVO: 500.html                                             #}
+{# DESCRIPCIÓN: Página de error 500 — error interno del servidor #}
+{# ============================================================ #}
+{% extends "base.html" %}
+{# Título de la página de error #}
+{% block title %}Error interno — Pedime{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="text-center">
+        <!-- Código de error grande -->
+        <h1 class="text-6xl font-bold text-gray-600 mb-4">500</h1>
+        <!-- Mensaje descriptivo -->
+        <p class="text-xl text-gray-400 mb-6">Error interno del servidor</p>
+        <!-- Enlace de regreso al inicio -->
+        <a href="/" class="text-emerald-400 hover:text-emerald-300 transition font-medium">Volver al inicio</a>
+    </div>
+</div>
+{% endblock %}

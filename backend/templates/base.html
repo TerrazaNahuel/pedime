@@ -1,21 +1,43 @@
+{# ============================================================ #}
+{# ARCHIVO: base.html                                            #}
+{# DESCRIPCIÓN: Plantilla base — Tailwind, estilos globales, CSP #}
+{# ============================================================ #}
 <!DOCTYPE html>
+{# Idioma español #}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {# Bloque del título, se reemplaza en cada página hija #}
     <title>{% block title %}Pedime{% endblock %}</title>
     <link rel="icon" type="image/png" href="/static/favicon.ico">
     <!-- Tailwind CSS local -->
     <script src="/static/js/tailwind.min.js"></script>
+    {# Configuración de colores personalizados de Tailwind #}
     <script>
         tailwind.config = { theme: { extend: { colors: { accent: '#10b981' } } } }
     </script>
-    <!-- HTMX para navegación sin recargas -->
+    {# Estilos globales para inputs, tarjetas de estadísticas y checkboxes #}
+    <style>
+        .input-field { border-color: rgba(255,255,255,0.1); border-width:1px; border-radius:0.75rem; padding:0.625rem 1rem; width:100%; background:#0a0a0a; color:white; font-size:0.875rem; line-height:1.25rem; transition:all .15s ease; }
+        .input-field::placeholder { color:#4b5563; }
+        .input-field:focus { outline:none; border-color:#10b981; }
+        .form-input { width:100%; background:#0a0a0a; border:1px solid rgba(255,255,255,0.1); border-radius:0.75rem; padding:0.625rem 1rem; color:white; font-size:0.875rem; line-height:1.25rem; transition:all .15s ease; }
+        .form-input:focus { outline:none; border-color:#10b981; }
+        .stat-card { background:#1a1a1a; border-radius:0.75rem; padding:1rem; border:1px solid rgba(255,255,255,0.05); text-align:center; }
+        .stat-value { font-size:1.5rem; font-weight:700; color:white; }
+        .stat-label { font-size:0.75rem; line-height:1rem; color:#6b7280; margin-top:0.25rem; }
+        .checkbox-custom { width:1rem; height:1rem; border-radius:0.25rem; border-color:rgba(255,255,255,0.1); background:#0a0a0a; color:#10b981; }
+        .checkbox-custom:focus { ring-color:#10b981; }
+    </style>
+    <!-- HTMX: navegación asíncrona sin recargar la página -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.12" crossorigin="anonymous"></script>
+    {# Bloque para inyectar scripts o estilos adicionales desde las páginas hijas #}
     {% block extra_head %}{% endblock %}
 </head>
-<!-- Fondo oscuro global, texto blanco, fuente sans-serif -->
+<!-- Cuerpo con fondo oscuro global y tipografía sans-serif -->
 <body class="bg-[#0a0a0a] text-white font-sans antialiased min-h-screen">
+    {# Bloque principal de contenido, reemplazado por cada página #}
     {% block content %}{% endblock %}
 </body>
 </html>

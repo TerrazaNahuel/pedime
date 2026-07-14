@@ -32,9 +32,9 @@ from passlib.hash import bcrypt
 @pytest.fixture(autouse=True)
 def setup_db():
     """Limpia rate limiter y recrea tablas antes de cada test."""
+    Base.metadata.create_all(bind=engine)
     from routers.auth import rate_limiter
     rate_limiter.clear()
-    Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
@@ -70,7 +70,7 @@ def seed_store(db):
         slug="test-store",
         email="test@test.com",
         whatsapp="5491134567890",
-        password_hash=bcrypt.hash("Test1234"),
+        password_hash=bcrypt.hash("Test1234!"),
         delivery_available=True,
         delivery_price=500,
         payment_transfer=True,
@@ -100,7 +100,7 @@ def client_with_csrf(client, seed_store):
 
     resp = client.post("/login", data={
         "email": "test@test.com",
-        "password": "Test1234",
+        "password": "Test1234!",
         "csrf_token": csrf,
     }, follow_redirects=False)
     assert resp.status_code == 302, f"Expected 302, got {resp.status_code}: {resp.text[:200]}"

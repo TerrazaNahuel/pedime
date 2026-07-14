@@ -1,6 +1,12 @@
+{# ============================================================ #}
+{# ARCHIVO: landing.html                                         #}
+{# DESCRIPCIÓN: Página pública de aterrizaje (landing page)      #}
+{# ============================================================ #}
 {% extends "base.html" %}
+{# Título SEO de la landing #}
 {% block title %}Pedime — Tu catálogo digital en segundos{% endblock %}
 {% block extra_head %}
+{# Estilos específicos de la sección hero #}
 <style>
     .bg-hero-gradient {
         background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.1), transparent);
@@ -115,6 +121,7 @@
 
 <!-- Footer con año dinámico -->
 <footer class="max-w-5xl mx-auto px-4 py-8 border-t border-white/5 text-center text-sm text-gray-500">
+    {# Año actual generado dinámicamente desde el servidor #}
     <p>© {{ now().year }} Nahuel Axel Terraza. Todos los derechos reservados.</p>
 </footer>
 {% endblock %}

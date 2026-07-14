@@ -26,18 +26,19 @@ class Store(Base):
     password_hash = Column(String(255), nullable=False)
     whatsapp = Column(String(50), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    delivery_available = Column(Boolean, default=True)
-    delivery_price = Column(Numeric(10, 2), default=0.0)
-    payment_transfer = Column(Boolean, default=True)
-    payment_cash = Column(Boolean, default=True)
-    primary_color = Column(String(7), default="#10b981")
-    logo_url = Column(String(500), default="")
-    opening_time = Column(String(5), default="")  # HH:MM
-    closing_time = Column(String(5), default="")  # HH:MM
-    plan = Column(String(20), default="free")  # "free" | "premium"
-    plan_expires_at = Column(DateTime, nullable=True)
-    is_active = Column(Boolean, default=True)
-    is_superadmin = Column(Boolean, default=False)
+    delivery_available = Column(Boolean, default=True)  # Indica si ofrece delivery
+    delivery_price = Column(Numeric(10, 2), default=0.0)  # Precio del delivery en ARS
+    payment_transfer = Column(Boolean, default=True)  # Acepta transferencia bancaria
+    payment_cash = Column(Boolean, default=True)  # Acepta pago en efectivo
+    primary_color = Column(String(7), default="#10b981")  # Color primario del comercio (hex)
+    logo_url = Column(String(500), default="")  # URL del logo del comercio
+    opening_time = Column(String(5), default="")  # HH:MM — hora de apertura
+    closing_time = Column(String(5), default="")  # HH:MM — hora de cierre
+    working_days = Column(String(20), default="1,2,3,4,5,6,7")  # Días laborales: 1=Lunes … 7=Domingo
+    plan = Column(String(20), default="free")  # Tipo de suscripción: "free" | "premium"
+    plan_expires_at = Column(DateTime, nullable=True)  # Fecha de vencimiento del plan premium
+    is_active = Column(Boolean, default=True)  # Comercio visible/publicado
+    is_superadmin = Column(Boolean, default=False)  # Permisos de administración global
 
     categories = relationship("Category", back_populates="store", cascade="all, delete-orphan")
     products = relationship("Product", back_populates="store", cascade="all, delete-orphan")
@@ -50,7 +51,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)  # Relación M:1 con stores
 
     store = relationship("Store", back_populates="categories")
     products = relationship("Product", back_populates="category", cascade="all, delete-orphan")
@@ -64,14 +65,14 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     description = Column(String(500), default="")
-    price = Column(Numeric(10, 2), nullable=False)
-    available = Column(Boolean, default=True)
-    stock = Column(Integer, default=0)  # 0 = sin límite de stock
+    price = Column(Numeric(10, 2), nullable=False)  # Precio en ARS
+    available = Column(Boolean, default=True)  # Visible/disponible para la venta
+    stock = Column(Integer, default=0)  # Stock disponible (0 = sin límite)
     image_url = Column(String(500), default="")
     sort_order = Column(Integer, default=0)  # Orden personalizado por drag & drop
-    variants = Column(Text, default="")  # JSON: [{"name":"Doble","price":150}]
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    variants = Column(Text, default="")  # JSON con variantes: [{"name":"Doble","price":150}]
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)  # Relación M:1 con categories
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)  # Relación M:1 con stores
 
     category = relationship("Category", back_populates="products")
     store = relationship("Store", back_populates="products")
@@ -100,6 +101,16 @@ class WhatsAppClick(Base):
     payment_method = Column(String(20), default="")
 
 
+class RateLimitEntry(Base):
+    """Registro de intentos para rate limiting, compartido entre workers via DB."""
+
+    __tablename__ = "rate_limit_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(200), index=True, nullable=False)  # Clave única, ej: "login:1.2.3.4"
+    attempted_at = Column(DateTime, default=lambda: datetime.now(UTC))  # Marca de tiempo del intento
+
+
 class PaymentTransaction(Base):
     """Transacción de pago para upgrade a premium."""
 
@@ -107,12 +118,12 @@ class PaymentTransaction(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
-    mp_preference_id = Column(String(100), unique=True, nullable=True)
-    mp_payment_id = Column(String(100), unique=True, nullable=True)
+    mp_preference_id = Column(String(100), unique=True, nullable=True)  # ID de preferencia de Mercado Pago
+    mp_payment_id = Column(String(100), unique=True, nullable=True)  # ID del pago en Mercado Pago
     status = Column(String(20), default="pending")  # pending | approved | rejected | refunded
-    amount = Column(Numeric(10, 2), nullable=False)
-    plan_type = Column(String(20), default="premium")
+    amount = Column(Numeric(10, 2), nullable=False)  # Monto cobrado en ARS
+    plan_type = Column(String(20), default="premium")  # Tipo de plan adquirido
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    approved_at = Column(DateTime, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
-    metadata_json = Column(Text, default="")
+    approved_at = Column(DateTime, nullable=True)  # Fecha de aprobación del pago
+    expires_at = Column(DateTime, nullable=True)  # Fecha de vencimiento del plan
+    metadata_json = Column(Text, default="")  # Datos adicionales en formato JSON

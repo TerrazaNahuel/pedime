@@ -7,10 +7,12 @@ usan todos los endpoints del panel de admin.
 
 import logging
 import os
+import secrets
+import urllib.parse
 from datetime import UTC, date, datetime
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from models import Category, Product, Store
 from sqlalchemy.orm import Session
@@ -34,6 +36,11 @@ class NotAuthorizedException(Exception):
     pass
 
 
+def get_client_ip(request: Request) -> str:
+    """Obtiene la IP real del cliente. TrustProxyMiddleware ya resuelve X-Forwarded-For."""
+    return request.client.host if request.client else "unknown"
+
+
 def get_authenticated_store(request: Request, db: Session) -> Store:
     """
     Obtiene el store autenticado desde la sesión.
@@ -49,7 +56,7 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
         raise NotAuthenticatedException()
     # Verificar expiración de premium
     if store.plan == "premium" and store.plan_expires_at:
-        if date.today() > store.plan_expires_at.date():
+        if datetime.now(UTC).date() > store.plan_expires_at.date():
             store.plan = "free"
             store.plan_expires_at = None
             db.commit()
@@ -58,8 +65,6 @@ def get_authenticated_store(request: Request, db: Session) -> Store:
 
 def render_dashboard_html(request: Request, store: Store, db: Session, msg: str = "", err: str = "", tab: str = "productos") -> HTMLResponse:
     """Renderiza el HTML completo del dashboard con nuevo CSRF token. Usado por HTMX."""
-    from models import Category, Product
-    import secrets
     categories = db.query(Category).filter(Category.store_id == store.id).all()
     products = db.query(Product).filter(Product.store_id == store.id).order_by(Product.sort_order, Product.id).all()
     category_products = {}
@@ -77,14 +82,31 @@ def render_dashboard_html(request: Request, store: Store, db: Session, msg: str 
     return resp
 
 
-def check_plan_limit(store: Store, db: Session, category_id: int | None = None) -> str | None:
+def admin_error_response(request: Request, store: Store, db: Session, msg: str, tab: str = "productos") -> HTMLResponse | RedirectResponse:
+    """Helper compartido para responder con error en admin, compatible con HTMX y sin JS."""
+    if request.headers.get("HX-Request"):
+        return render_dashboard_html(request, store, db, err=msg, tab=tab)
+    tab_param = f"&tab={tab}" if tab != "productos" else ""
+    return RedirectResponse(url=f"/admin/dashboard?err={urllib.parse.quote(msg)}{tab_param}", status_code=302)
+
+
+def check_plan_limit(store: Store, db: Session, category_id: int | None = None, exclude_product_id: int | None = None) -> str | None:
+    """
+    Verifica los límites del plan free (cantidad de categorías o productos por categoría).
+    Retorna un mensaje de error si se excede el límite, o None si está ok.
+    Si category_id se pasa, verifica productos en esa categoría; si no, verifica categorías totales.
+    exclude_product_id permite excluir un producto del conteo (útil al editar).
+    """
     if store.plan == "premium":
         return None
     if category_id is not None:
-        prod_count = db.query(Product).filter(
+        q = db.query(Product).filter(
             Product.category_id == category_id,
             Product.store_id == store.id,
-        ).count()
+        )
+        if exclude_product_id is not None:
+            q = q.filter(Product.id != exclude_product_id)
+        prod_count = q.count()
         if prod_count >= MAX_PRODUCTS_PER_CATEGORY:
             return f"Plan free: máximo {MAX_PRODUCTS_PER_CATEGORY} productos por categoría. Actualizá a premium."
     else:

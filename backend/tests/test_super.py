@@ -15,7 +15,7 @@ def _csrf(client, url):
     return m.group(1), resp
 
 
-def _login(client, email="super@test.com", password="Super1234"):
+def _login(client, email="super@test.com", password="Super1234!"):
     csrf, _ = _csrf(client, "/login")
     resp = client.post("/login", data={
         "email": email, "password": password, "csrf_token": csrf,
@@ -34,7 +34,7 @@ def super_store(db):
         slug="super-admin",
         email="super@test.com",
         whatsapp="5491134567890",
-        password_hash=bcrypt.hash("Super1234"),
+        password_hash=bcrypt.hash("Super1234!"),
         is_superadmin=True,
         plan="premium",
     )
@@ -47,7 +47,7 @@ def super_store(db):
         slug="extra-store",
         email="extra@test.com",
         whatsapp="5491134567891",
-        password_hash=bcrypt.hash("Extra1234"),
+        password_hash=bcrypt.hash("Extra1234!"),
         is_superadmin=False,
         plan="free",
     )
@@ -176,7 +176,7 @@ class TestSuperActions:
         from passlib.hash import bcrypt
         other = Store(
             name="Other Super", slug="other-super", email="other@test.com",
-            whatsapp="5491134567892", password_hash=bcrypt.hash("Other1234"),
+            whatsapp="5491134567892", password_hash=bcrypt.hash("Other1234!"),
             is_superadmin=True, plan="premium",
         )
         db.add(other)
