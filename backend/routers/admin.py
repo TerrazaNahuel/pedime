@@ -6,22 +6,24 @@ Provee el dashboard principal y el logout.
 """
 
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
 
 from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from models import Category, PageView, Product, WhatsAppClick
+from models import PageView, WhatsAppClick
 from ratelimit import RateLimiter
 from routers import admin_categories, admin_products, admin_settings
-from routers.admin_base import get_authenticated_store, get_client_ip, logger, render_template_with_csrf
+from routers.admin_base import (
+    get_authenticated_store,
+    get_client_ip,
+    logger,
+    render_dashboard_html,
+    render_template_with_csrf,
+)
 from sqlalchemy import case
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
-
-if TYPE_CHECKING:
-    from sqlalchemy import Column
 
 router = APIRouter()
 logout_limiter = RateLimiter()
@@ -49,7 +51,7 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
     week_start = today_start - timedelta(days=now.weekday())
     month_start = today_start.replace(day=1)
 
-    def _agg_stats(model: type, time_col: "Column") -> dict:
+    def _agg_stats(model, time_col) -> dict:
         """Agrega estadísticas de un modelo (PageView o WhatsAppClick) en una sola query."""
         row = db.query(
             db_func.count(model.id).label("total"),
@@ -78,28 +80,11 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/admin/dashboard")
 def admin_dashboard(request: Request, msg: str = "", err: str = "", tab: str = "productos", db: Session = Depends(get_db)):
-    """
-    Dashboard principal del admin.
-    Muestra productos (ordenados), categorías y configuración.
-    Los parámetros msg/err permiten mostrar mensajes flash desde otros endpoints.
-    tab: determina qué tab mostrar activa al cargar (productos, categorias, config).
-    """
-    store = get_authenticated_store(request, db)
-    categories = db.query(Category).filter(Category.store_id == store.id).all()
-    products = db.query(Product).filter(Product.store_id == store.id).order_by(Product.sort_order, Product.id).all()
-
-    category_products = {}
-    for cat in categories:
-        category_products[cat.id] = [p for p in products if p.category_id == cat.id]
-
+    """Dashboard principal del admin. Delega en render_dashboard_html."""
     if tab not in ("productos", "categorias", "config"):
         tab = "productos"
-    return render_template_with_csrf(request, "dashboard.html", {
-        "store": store, "categories": categories, "products": products,
-        "category_products": category_products,
-        "success": msg or None, "error": err or None,
-        "base_url": str(request.base_url), "active_tab": tab,
-    })
+    store = get_authenticated_store(request, db)
+    return render_dashboard_html(request, store, db, msg=msg, err=err, tab=tab)
 
 
 @router.post("/admin/logout")

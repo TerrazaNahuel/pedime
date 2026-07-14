@@ -51,7 +51,7 @@ class TestProducts:
             "csrf_token": csrf,
         }, follow_redirects=False)
         assert resp.status_code == 302
-        assert resp.headers.get("location", "").endswith("/admin/dashboard")
+        assert "/admin/dashboard" in resp.headers.get("location", "")
 
     def test_create_product_long_name_rejected(self, client, seed_store):
         """Nombre de producto > 100 caracteres debe ser rechazado."""

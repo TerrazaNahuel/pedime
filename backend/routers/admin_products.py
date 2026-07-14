@@ -8,20 +8,19 @@ reordenar (drag & drop), exportar e importar CSV.
 import csv
 import io
 import json
-import urllib.parse
 from decimal import Decimal
 
 from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import Response
 from models import Category, Product, Store
 from routers.admin_base import (
     admin_error_response,
     check_plan_limit,
     get_authenticated_store,
     logger,
-    render_dashboard_html,
+    respond_ok,
 )
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
@@ -117,9 +116,7 @@ def create_product(
                    featured=(featured == "1"), sort_order=min_sort - 1))
     db.commit()
     logger.info("Producto creado store_id=%s category_id=%s", store.id, category_id)
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Producto creado", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    return respond_ok(request, store, db, "Producto creado")
 
 
 def update_product(
@@ -136,7 +133,7 @@ def update_product(
     featured: str,
     store: Store,
     db: Session,
-) -> HTMLResponse | RedirectResponse:
+) -> Response:
     """Edita un producto existente."""
     variants_err = validate_variants_json(variants, store)
     if variants_err:
@@ -161,9 +158,7 @@ def update_product(
     prod.featured = (featured == "1")
     db.commit()
     logger.info("Producto editado store_id=%s id=%s", store.id, product_id)
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Producto actualizado", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    return respond_ok(request, store, db, "Producto actualizado")
 
 
 @router.post("/admin/product/{product_id}/duplicate")
@@ -196,9 +191,7 @@ def duplicate_product(product_id: int, request: Request, csrf_token: str = Form(
     db.add(dup)
     db.commit()
     logger.info("Producto duplicado store_id=%s from_id=%s new_id=%s", store.id, product_id, dup.id)
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Producto duplicado", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    return respond_ok(request, store, db, "Producto duplicado")
 
 
 @router.post("/admin/product/{product_id}/delete")
@@ -213,9 +206,8 @@ def delete_product(product_id: int, request: Request, csrf_token: str = Form(...
     logger.info("Producto eliminado store_id=%s id=%s", store.id, product_id)
     db.delete(prod)
     db.commit()
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Producto eliminado", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    logger.info("Producto eliminado store_id=%s id=%s", store.id, product_id)
+    return respond_ok(request, store, db, "Producto eliminado")
 
 
 @router.post("/admin/product/{product_id}/toggle")
@@ -230,9 +222,7 @@ def toggle_product(product_id: int, request: Request, csrf_token: str = Form(...
     prod.available = not prod.available
     db.commit()
     logger.info("Producto toggle store_id=%s id=%s available=%s", store.id, product_id, prod.available)
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Visibilidad actualizada", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    return respond_ok(request, store, db, "Visibilidad actualizada")
 
 
 @router.post("/admin/product/{product_id}/toggle-featured")
@@ -247,9 +237,7 @@ def toggle_featured(product_id: int, request: Request, csrf_token: str = Form(..
     prod.featured = not prod.featured
     db.commit()
     logger.info("Producto toggle featured store_id=%s id=%s featured=%s", store.id, product_id, prod.featured)
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Destacado actualizado", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    return respond_ok(request, store, db, "Destacado actualizado")
 
 
 @router.post("/admin/products/reorder")
@@ -279,9 +267,7 @@ def reorder_products(request: Request, product_ids: str = Form(...), csrf_token:
             id_to_product[pid].sort_order = i
     db.commit()
     logger.info("Productos reordenados store_id=%s count=%s", store.id, len(ids))
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Orden guardado", tab="productos")
-    return RedirectResponse(url="/admin/dashboard", status_code=302)
+    return respond_ok(request, store, db, "Orden guardado")
 
 
 @router.get("/admin/products/export")
@@ -407,6 +393,4 @@ def import_products_csv(
     if errors:
         msg += " Errores: " + "; ".join(errors[:5])
 
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg=msg, tab="productos")
-    return RedirectResponse(url=f"/admin/dashboard?msg={urllib.parse.quote(msg)}", status_code=302)
+    return respond_ok(request, store, db, msg)

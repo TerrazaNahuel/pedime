@@ -7,14 +7,13 @@ Operaciones: crear, editar nombre y eliminar (con cascade a productos).
 from csrf import validate_csrf
 from database import get_db
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
 from models import Category
 from routers.admin_base import (
     admin_error_response,
     check_plan_limit,
     get_authenticated_store,
     logger,
-    render_dashboard_html,
+    respond_ok,
 )
 from sqlalchemy.orm import Session
 from validators import validate_name
@@ -50,9 +49,7 @@ def create_category(request: Request, name: str = Form(...), csrf_token: str = F
     db.add(Category(name=name, store_id=store.id))
     db.commit()
     logger.info("Categoría creada store_id=%s name=%s", store.id, name)
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Categoría creada", tab="categorias")
-    return RedirectResponse(url="/admin/dashboard?tab=categorias", status_code=302)
+    return respond_ok(request, store, db, "Categoría creada", tab="categorias")
 
 
 @router.post("/admin/category/{category_id}/edit")
@@ -71,16 +68,12 @@ def update_category(category_id: int, request: Request, name: str = Form(...), i
     cat.name = name
     cat.image_url = image_url if image_url else ""
     db.commit()
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Categoría actualizada", tab="categorias")
-    return RedirectResponse(url="/admin/dashboard?tab=categorias", status_code=302)
+    return respond_ok(request, store, db, "Categoría actualizada", tab="categorias")
 
 
 @router.post("/admin/category/{category_id}/delete")
 def delete_category(category_id: int, request: Request, csrf_token: str = Form(...), db: Session = Depends(get_db)):
-    """
-    Elimina una categoría y todos sus productos (cascade).
-    """
+    """Elimina una categoría y todos sus productos (cascade)."""
     validate_csrf(request, csrf_token)
     store = get_authenticated_store(request, db)
 
@@ -90,6 +83,4 @@ def delete_category(category_id: int, request: Request, csrf_token: str = Form(.
     logger.info("Categoría eliminada store_id=%s id=%s", store.id, category_id)
     db.delete(cat)
     db.commit()
-    if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, msg="Categoría eliminada", tab="categorias")
-    return RedirectResponse(url="/admin/dashboard?tab=categorias", status_code=302)
+    return respond_ok(request, store, db, "Categoría eliminada", tab="categorias")

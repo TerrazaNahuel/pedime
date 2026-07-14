@@ -97,10 +97,21 @@ def render_dashboard_html(request: Request, store: Store, db: Session, msg: str 
 
 def admin_error_response(request: Request, store: Store, db: Session, msg: str, tab: str = "productos") -> HTMLResponse | RedirectResponse:
     """Helper compartido para responder con error en admin, compatible con HTMX y sin JS."""
+    return _respond(request, store, db, msg=msg, tab=tab, is_error=True)
+
+
+def respond_ok(request: Request, store: Store, db: Session, msg: str, tab: str = "productos") -> HTMLResponse | RedirectResponse:
+    """Respuesta de éxito para operaciones admin: HTMX render o redirect con mensaje."""
+    return _respond(request, store, db, msg=msg, tab=tab)
+
+
+def _respond(request: Request, store: Store, db: Session, msg: str, tab: str = "productos", is_error: bool = False) -> HTMLResponse | RedirectResponse:
+    """Respuesta unificada: HTMX render o redirect, usada por todos los endpoints admin."""
     if request.headers.get("HX-Request"):
-        return render_dashboard_html(request, store, db, err=msg, tab=tab)
+        return render_dashboard_html(request, store, db, err=msg if is_error else "", msg="" if is_error else msg, tab=tab)
     tab_param = f"&tab={tab}" if tab != "productos" else ""
-    return RedirectResponse(url=f"/admin/dashboard?err={urllib.parse.quote(msg)}{tab_param}", status_code=302)
+    key = "err" if is_error else "msg"
+    return RedirectResponse(url=f"/admin/dashboard?{key}={urllib.parse.quote(msg)}{tab_param}", status_code=302)
 
 
 def check_plan_limit(store: Store, db: Session, category_id: int | None = None, exclude_product_id: int | None = None) -> str | None:
