@@ -16,7 +16,7 @@ from models import Category, PageView, Product, WhatsAppClick
 from ratelimit import RateLimiter
 from routers import admin_categories, admin_products, admin_settings
 from routers.admin_base import get_authenticated_store, get_client_ip, logger, templates
-from sqlalchemy import Column
+from sqlalchemy import Column, case
 from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
 
@@ -50,9 +50,9 @@ def admin_stats(request: Request, db: Session = Depends(get_db)):
         """Agrega estadísticas de un modelo (PageView o WhatsAppClick) en una sola query."""
         row = db.query(
             db_func.count(model.id).label("total"),
-            db_func.sum(db_func.case((time_col >= today_start, 1), else_=0)).label("today"),
-            db_func.sum(db_func.case((time_col >= week_start, 1), else_=0)).label("week"),
-            db_func.sum(db_func.case((time_col >= month_start, 1), else_=0)).label("month"),
+            db_func.sum(case((time_col >= today_start, 1), else_=0)).label("today"),
+            db_func.sum(case((time_col >= week_start, 1), else_=0)).label("week"),
+            db_func.sum(case((time_col >= month_start, 1), else_=0)).label("month"),
         ).filter(model.store_id == store.id).first()
         return {"total": row.total or 0, "today": row.today or 0, "week": row.week or 0, "month": row.month or 0}
 

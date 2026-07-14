@@ -458,3 +458,13 @@ class TestSettings:
         resp = client.get("/admin/dashboard", follow_redirects=False)
         assert resp.status_code == 302
         assert "/login" in resp.headers.get("location", "")
+
+
+class TestStats:
+    def test_stats_accessible(self, client, seed_store):
+        """El panel de estadísticas debe cargar correctamente (200)."""
+        _login(client)
+        resp = client.get("/admin/stats")
+        assert resp.status_code == 200
+        assert "Estadísticas" in resp.text
+        assert "Visitas al menú" in resp.text
