@@ -23,12 +23,20 @@ backend/.env
 # OS
 .DS_Store
 Thumbs.db
-*.pyc
 
-
+# Testing
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Logs
 *.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # Project specific
 backend/data/

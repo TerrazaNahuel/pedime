@@ -75,6 +75,7 @@
         } catch {
             currentVariants = [];
         }
+        window._currentVariants = currentVariants;
         renderVariants();
         window.openModal('producto-modal');
     };
@@ -176,6 +177,7 @@
         var group = document.getElementById('cat-group-' + id);
         var arrow = document.getElementById('cat-arrow-' + id);
         if (!group) return;
+        if (!arrow) return;
         var isHidden = group.style.display === 'none';
         group.style.display = isHidden ? '' : 'none';
         arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
@@ -222,7 +224,7 @@
                     window.addVariant();
                     break;
                 case 'start-payment':
-                    window.startPayment(btn.getAttribute('data-plan'), e);
+                    window.startPayment(btn.getAttribute('data-plan'), btn);
                     break;
                 case 'show-qr':
                     window.showQR();
@@ -262,9 +264,12 @@
         });
 
         // Cierra el modal al hacer clic fuera del contenido (en el backdrop)
-        document.getElementById('producto-modal').addEventListener('click', function(e) {
-            if (e.target === this) window.closeModal('producto-modal');
-        });
+        var prodModal = document.getElementById('producto-modal');
+        if (prodModal) {
+            prodModal.addEventListener('click', function(e) {
+                if (e.target === prodModal) window.closeModal('producto-modal');
+            });
+        }
 
         // Al abrir el modal de nuevo producto, resetea el formulario después de que el modal sea visible
         var newProductBtn = document.querySelector('[data-action="open-modal"][data-target="producto-modal"]');
@@ -306,7 +311,9 @@
         // Después de un swap HTMX, restaura el scroll y cierra el modal
         document.addEventListener('htmx:afterSwap', function(e) {
             window.scrollTo(0, window._savedScroll || 0);
-            window.closeModal('producto-modal');
+            if (e.detail.elt.id === 'producto-form' || e.detail.elt.closest('#producto-modal')) {
+                window.closeModal('producto-modal');
+            }
         });
 
         // Inicializa SortableJS para drag & drop en la lista de productos (reordenamiento)
@@ -336,9 +343,17 @@
         var container = document.getElementById('qrcode');
         container.innerHTML = '';
         var menuUrl = document.querySelector('[href^="/menu/"]');
-        if (!menuUrl) return;
+        if (!menuUrl) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            return;
+        }
         var url = window.location.origin + menuUrl.getAttribute('href');
-        new QRCode(container, { text: url, width: 200, height: 200 });
+        try {
+            new QRCode(container, { text: url, width: 200, height: 200 });
+        } catch {
+            container.innerHTML = '<p class="text-gray-500 text-sm">QR no disponible</p>';
+        }
         setTimeout(function() {
             var canvas = container.querySelector('canvas');
             if (canvas) {
@@ -357,8 +372,7 @@
     });
 
     /** Inicia el flujo de pago con Mercado Pago: crea una preferencia y redirige al checkout. */
-    window.startPayment = async function(plan, evt) {
-        var btn = evt.currentTarget;
+    window.startPayment = async function(plan, btn) {
         btn.disabled = true;
         btn.textContent = "Procesando...";
         var csrfEl = document.querySelector('input[name="csrf_token"]');

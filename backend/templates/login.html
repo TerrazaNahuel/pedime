@@ -26,18 +26,18 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             {# Mensaje de error si las credenciales son incorrectas #}
             {% if error %}
-                <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2">{{ error }}</div>
+                <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2" role="alert">{{ error }}</div>
             {% endif %}
             {# Campo de email #}
             <div>
-                <label class="block text-sm text-gray-400 mb-1">Email</label>
-                <input type="email" name="email" required
+                <label class="block text-sm text-gray-400 mb-1" for="login-email">Email</label>
+                <input type="email" name="email" id="login-email" required autocomplete="email"
                        class="input-field">
             </div>
             {# Campo de contraseña #}
             <div>
-                <label class="block text-sm text-gray-400 mb-1">Contraseña</label>
-                <input type="password" name="password" required
+                <label class="block text-sm text-gray-400 mb-1" for="login-password">Contraseña</label>
+                <input type="password" name="password" id="login-password" required autocomplete="current-password"
                        class="input-field">
             </div>
             {# Botón de envío del formulario #}

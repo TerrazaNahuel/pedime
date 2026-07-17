@@ -11,6 +11,7 @@ MAX_CATEGORIES_FREE = int(os.getenv("MAX_CATEGORIES_FREE", "5"))  # Free: máx c
 MAX_CATEGORIES_VIP = int(os.getenv("MAX_CATEGORIES_VIP", "15"))  # VIP Básico: máx categorías
 MAX_REORDER_IDS = int(os.getenv("MAX_REORDER_IDS", "500"))
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE_MB", "10")) * 1024 * 1024
+MAX_CSV_ROWS = int(os.getenv("MAX_CSV_ROWS", "500"))
 MAX_VARIANTS = int(os.getenv("MAX_VARIANTS", "10"))
 
 # ── Rate limiting ──────────────────────────────────
@@ -39,4 +40,4 @@ PREMIUM_DURATION_DAYS = int(os.getenv("PREMIUM_DURATION_DAYS", "30"))
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
 
 # ── Contraseña del store demo ──────────────────────
-DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "Admin123!")
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "")

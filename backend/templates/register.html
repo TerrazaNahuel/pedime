@@ -17,46 +17,46 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             {# Mensaje de error si falla el registro #}
             {% if error %}
-                <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2">{{ error }}</div>
+                <div class="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2" role="alert">{{ error }}</div>
             {% endif %}
             {# Campo: nombre del comercio #}
             <div>
-                <label class="block text-sm text-gray-400 mb-1">Nombre del comercio</label>
-                <input type="text" name="name" required
+                <label class="block text-sm text-gray-400 mb-1" for="reg-name">Nombre del comercio</label>
+                <input type="text" name="name" id="reg-name" required autocomplete="organization"
                        class="input-field">
             </div>
             {# Campos: email y WhatsApp en fila #}
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Email</label>
-                    <input type="email" name="email" required
+                    <label class="block text-sm text-gray-400 mb-1" for="reg-email">Email</label>
+                    <input type="email" name="email" id="reg-email" required autocomplete="email"
                            class="input-field">
                 </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">WhatsApp</label>
-                    <input type="text" name="whatsapp" required placeholder="5491134567890"
+                    <label class="block text-sm text-gray-400 mb-1" for="reg-whatsapp">WhatsApp</label>
+                    <input type="text" name="whatsapp" id="reg-whatsapp" required placeholder="5491134567890"
                            class="input-field">
                 </div>
             </div>
             {# Campo: slug con prefijo de URL fijo #}
             <div>
-                <label class="block text-sm text-gray-400 mb-1">Slug (link de tu tienda)</label>
+                <label class="block text-sm text-gray-400 mb-1" for="reg-slug">Slug (link de tu tienda)</label>
                 <div class="flex items-center gap-2 bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-500">
                     <span>pedime.app/menu/</span>
-                    <input type="text" name="slug" required placeholder="mi-pizzeria"
+                    <input type="text" name="slug" id="reg-slug" required placeholder="mi-pizzeria"
                            class="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none border-none p-0">
                 </div>
             </div>
             {# Campos: contraseña y confirmación en fila #}
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Contraseña</label>
-                    <input type="password" name="password" required minlength="8"
+                    <label class="block text-sm text-gray-400 mb-1" for="reg-password">Contraseña</label>
+                    <input type="password" name="password" id="reg-password" required minlength="8" autocomplete="new-password"
                            class="input-field">
                 </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Confirmar</label>
-                    <input type="password" name="confirm_password" required minlength="8"
+                    <label class="block text-sm text-gray-400 mb-1" for="reg-confirm">Confirmar</label>
+                    <input type="password" name="confirm_password" id="reg-confirm" required minlength="8" autocomplete="new-password"
                            class="input-field">
                 </div>
             </div>

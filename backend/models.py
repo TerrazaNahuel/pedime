@@ -34,7 +34,7 @@ class Store(Base):
     logo_url = Column(String(500), default="")  # URL del logo del comercio
     opening_time = Column(String(5), default="")  # HH:MM — hora de apertura
     closing_time = Column(String(5), default="")  # HH:MM — hora de cierre
-    working_days = Column(String(20), default="1,2,3,4,5,6,7")  # Días laborales: 1=Lunes … 7=Domingo
+    working_days = Column(String(50), default="1,2,3,4,5,6,7")  # Días laborales: 1=Lunes … 7=Domingo
     plan = Column(String(20), default="free")  # "free" | "vip_basico" | "vip_premium"
     plan_expires_at = Column(DateTime, nullable=True)  # Fecha de vencimiento del plan premium
     is_active = Column(Boolean, default=True)  # Comercio visible/publicado

@@ -46,8 +46,8 @@ class CreatePreferencePayload(BaseModel):
 def _verify_mp_signature(request: Request, payment_id: str) -> bool:
     """Verifica la firma HMAC-SHA256 del webhook de Mercado Pago."""
     if not MP_WEBHOOK_SECRET:
-        admin_logger.warning("MP_WEBHOOK_SECRET no configurado, webhook sin verificar")
-        return True
+        admin_logger.error("MP_WEBHOOK_SECRET no configurado, webhook rechazado")
+        return False
     x_signature = request.headers.get("x-signature", "")
     x_request_id = request.headers.get("x-request-id", "")
     if not x_signature or not x_request_id:

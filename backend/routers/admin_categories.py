@@ -16,7 +16,7 @@ from routers.admin_base import (
     respond_ok,
 )
 from sqlalchemy.orm import Session
-from validators import validate_name
+from validators import validate_name, validate_url
 
 router = APIRouter()
 
@@ -64,6 +64,10 @@ def update_category(category_id: int, request: Request, name: str = Form(...), i
     cat = db.query(Category).filter(Category.id == category_id, Category.store_id == store.id).first()
     if not cat:
         return admin_error_response(request, store, db, "Categoría no encontrada", tab="categorias")
+    if image_url:
+        url_err = validate_url(image_url, "La URL de la imagen")
+        if url_err:
+            return admin_error_response(request, store, db, url_err, tab="categorias")
     logger.info("Categoría editada store_id=%s id=%s", store.id, category_id)
     cat.name = name
     cat.image_url = image_url if image_url else ""

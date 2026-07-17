@@ -56,7 +56,7 @@ def generate_secure_password(length: int = 16) -> str:
         str con la contraseña segura generada.
     """
     # Conjunto de caracteres permitidos: letras (may/min), dígitos y especiales
-    chars = string.ascii_letters + string.digits + "!@#$%^&*()"
+    chars = string.ascii_letters + string.digits + "!@#$%^&*(),.?\":{}|<>"
     while True:
         pw = "".join(secrets.choice(chars) for _ in range(length))
         if validate_password(pw) is None:

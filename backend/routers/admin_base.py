@@ -84,8 +84,8 @@ def render_dashboard_html(request: Request, store: Store, db: Session, msg: str 
     categories = db.query(Category).filter(Category.store_id == store.id).all()
     products = db.query(Product).filter(Product.store_id == store.id).order_by(Product.sort_order, Product.id).all()
     category_products = {}
-    for cat in categories:
-        category_products[cat.id] = [p for p in products if p.category_id == cat.id]
+    for p in products:
+        category_products.setdefault(p.category_id, []).append(p)
     base_url = str(request.base_url)
     return render_template_with_csrf(request, "dashboard.html", {
         "store": store, "categories": categories, "products": products,

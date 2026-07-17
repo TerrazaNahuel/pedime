@@ -177,7 +177,7 @@ async function fetchMenu() {
         renderMenu();
         // Tracking de visita (fire-and-forget)
         navigator.sendBeacon(`${API_BASE}/api/track/view/${currentSlug}`, "");
-    } catch { showError(); }
+    } catch (err) { console.error("fetchMenu:", err); showError(); }
 }
 
 /**
@@ -239,7 +239,7 @@ function renderClosedBanner(container) {
 }
 
 /** Construye la tarjeta visual de un producto individual con imagen, nombre, descripción, precio y controles de cantidad. */
-function renderProductCard(prod, variantsArr, select) {
+function renderProductCard(prod, variantsArr) {
     const card = document.createElement("div");
     card.className = "product-card flex items-center justify-between bg-[#1a1a1a] rounded-xl p-4 border border-white/5 gap-3";
     card.dataset.id = prod.id;
@@ -378,13 +378,13 @@ function renderCategorySection(cat, pillsContainer, container) {
     pill.textContent = cat.name;
     pill.onclick = () => {
         if (!expandedCategories.has(cat.id)) toggleCategory(cat.id);
-        document.getElementById(sectionId).scrollIntoView({ behavior: "smooth", block: "start" });
+        var section = document.getElementById(sectionId);
+        if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
     };
     pillsContainer.appendChild(pill);
     cat.products.forEach((prod) => {
         const variantsArr = prod._variantsArr;
-        let select = null;
-        const card = renderProductCard(prod, variantsArr, select);
+        const card = renderProductCard(prod, variantsArr);
         productsWrapper.appendChild(card);
     });
     section.appendChild(productsWrapper);
@@ -393,6 +393,7 @@ function renderCategorySection(cat, pillsContainer, container) {
 
 /** Renderiza el menú completo: datos del local, categorías, productos, búsqueda y navegación. */
 function renderMenu() {
+    clearTimeout(_searchTimer);
     renderStoreDetails();
     const container = document.getElementById("menu-content");
     container.innerHTML = "";
@@ -426,30 +427,33 @@ function toggleCategory(catId) {
 
 /** Filtro de búsqueda con debounce: oculta productos que no coinciden y auto-expande categorías relevantes. */
 let _searchTimer = null;
-document.getElementById("search-input").addEventListener("input", function() {
-    clearTimeout(_searchTimer);
-    var self = this;
-    _searchTimer = setTimeout(function() {
-        const q = self.value.toLowerCase().trim();
-        document.querySelectorAll(".product-card").forEach(card => {
-            const name = card.getAttribute("data-name") || "";
-            card.style.display = (!q || name.includes(q)) ? "" : "none";
-        });
-        document.querySelectorAll("#menu-content > div[id^='cat-']").forEach(section => {
-            const visibleCards = section.querySelectorAll('.product-card[style*="display: none"]');
-            const allCards = section.querySelectorAll(".product-card");
-            section.style.display = (allCards.length === visibleCards.length && q) ? "none" : "";
-            if (q && allCards.length > visibleCards.length) {
-                const wrapper = section.querySelector(".products-wrapper");
-                const chevron = section.querySelector(".chevron");
-                if (wrapper && wrapper.classList.contains("hidden")) {
-                    wrapper.classList.remove("hidden");
-                    if (chevron) chevron.classList.add("rotate-180");
+var searchInput = document.getElementById("search-input");
+if (searchInput) {
+    searchInput.addEventListener("input", function() {
+        clearTimeout(_searchTimer);
+        var self = this;
+        _searchTimer = setTimeout(function() {
+            const q = self.value.toLowerCase().trim();
+            document.querySelectorAll(".product-card").forEach(card => {
+                const name = card.getAttribute("data-name") || "";
+                card.style.display = (!q || name.includes(q)) ? "" : "none";
+            });
+            document.querySelectorAll("#menu-content > div[id^='cat-']").forEach(section => {
+                const visibleCards = section.querySelectorAll('.product-card[style*="display: none"]');
+                const allCards = section.querySelectorAll(".product-card");
+                section.style.display = (allCards.length === visibleCards.length && q) ? "none" : "";
+                if (q && allCards.length > visibleCards.length) {
+                    const wrapper = section.querySelector(".products-wrapper");
+                    const chevron = section.querySelector(".chevron");
+                    if (wrapper && wrapper.classList.contains("hidden")) {
+                        wrapper.classList.remove("hidden");
+                        if (chevron) chevron.classList.add("rotate-180");
+                    }
                 }
-            }
-        });
-    }, 200);
-});
+            });
+        }, 200);
+    });
+}
 
 /**
  * Actualiza los controles de cantidad de un producto en el DOM sin re-renderizar todo.
@@ -632,9 +636,9 @@ const paymentSection = document.getElementById("payment-section");
 const commentSection = document.getElementById("comment-section");
 
 // Vincula eventos de apertura y cierre del drawer
-cartBtn.onclick = () => openCart();
-cartOverlay.onclick = () => closeCartAndSave();
-cartClose.onclick = () => closeCartAndSave();
+if (cartBtn) cartBtn.onclick = () => openCart();
+if (cartOverlay) cartOverlay.onclick = () => closeCartAndSave();
+if (cartClose) cartClose.onclick = () => closeCartAndSave();
 
 /**
  * Abre el drawer del carrito y renderiza sus secciones.
@@ -976,6 +980,9 @@ function sendWhatsAppTracking(total, payMethod) {
  */
 function clearCartAndClose() {
     cart = {};
+    deliveryAddress = "";
+    deliveryReference = "";
+    orderComment = "";
     localStorage.removeItem(storageKey());
     updateCartUI();
     closeCart();
@@ -985,6 +992,7 @@ function clearCartAndClose() {
  * Handler principal del botón de WhatsApp.
  * Recolecta todos los datos del pedido, construye el mensaje, envía tracking y redirige a wa.me.
  */
+if (whatsappBtn) {
 whatsappBtn.onclick = () => {
     const entries = Object.entries(cart);
     if (!entries.length) return;
@@ -1007,5 +1015,6 @@ whatsappBtn.onclick = () => {
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), "_blank");
     clearCartAndClose();
 };
+}
 
 init();

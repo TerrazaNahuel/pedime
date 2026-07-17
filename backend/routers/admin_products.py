@@ -26,13 +26,15 @@ from sqlalchemy import func as db_func
 from sqlalchemy.orm import Session
 from validators import validate_url
 
-from backend.settings import MAX_FILE_SIZE, MAX_REORDER_IDS, MAX_VARIANTS
+from backend.settings import MAX_FILE_SIZE, MAX_REORDER_IDS, MAX_VARIANTS, MAX_CSV_ROWS
 
 router = APIRouter()
 
 
 def _validate_product_fields(name: str, description: str, price: Decimal, stock: int, image_url: str, available: str, category_id: int, store, db) -> str | None:
     """Valida campos comunes de producto. Retorna mensaje de error o None."""
+    if not name or not name.strip():
+        return "El nombre del producto no puede estar vacío"
     if len(name) > 100:
         return "El nombre del producto es demasiado largo"
     if len(description) > 500:
@@ -203,7 +205,6 @@ def delete_product(product_id: int, request: Request, csrf_token: str = Form(...
     prod = db.query(Product).filter(Product.id == product_id, Product.store_id == store.id).first()
     if not prod:
         return admin_error_response(request, store, db, "Producto no encontrado")
-    logger.info("Producto eliminado store_id=%s id=%s", store.id, product_id)
     db.delete(prod)
     db.commit()
     logger.info("Producto eliminado store_id=%s id=%s", store.id, product_id)
@@ -325,6 +326,9 @@ def import_products_csv(
     created = 0
     errors = []
     for row_num, row in enumerate(reader, start=2):
+        if row_num - 1 > MAX_CSV_ROWS:
+            errors.append(f"Demasiadas filas (máximo {MAX_CSV_ROWS})")
+            break
         name = row.get("name", "").strip()
         if not name:
             errors.append(f"Fila {row_num}: nombre requerido")

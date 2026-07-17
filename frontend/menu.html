@@ -22,10 +22,10 @@
         /* Variables CSS para colores dinámicos del comercio */
         :root { --accent: #10b981; }
         .bg-accent, .bg-emerald-500 { background-color: var(--accent) !important; }
-        .hover\:bg-accent:hover, .hover\:bg-emerald-600:hover { background-color: color-mix(in srgb, var(--accent) 80%, black) !important; }
+        .hover\:bg-accent:hover, .hover\:bg-emerald-600:hover { background-color: var(--accent); filter: brightness(0.8); background-color: color-mix(in srgb, var(--accent) 80%, black) !important; }
         .text-accent, .text-emerald-400 { color: var(--accent) !important; }
         .border-accent, .border-emerald-500 { border-color: var(--accent) !important; }
-        .shadow-accent, .shadow-emerald-500\/25 { box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--accent) 25%, transparent) !important; }
+        .shadow-accent, .shadow-emerald-500\/25 { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--accent) 25%, transparent) !important; }
     </style>
     <style>
         @media print {

@@ -12,6 +12,7 @@ from database import SessionLocal
 from models import Category, Product, Store
 from passlib.hash import bcrypt
 from settings import DEMO_PASSWORD
+from password import generate_secure_password
 
 logger = logging.getLogger("pedime.seed")
 
@@ -23,13 +24,17 @@ def seed_default_store():
         existing = db.query(Store).first()
         if existing:
             return
-        default_password = DEMO_PASSWORD
+        default_password = DEMO_PASSWORD or generate_secure_password()
 
         # ── Log de credenciales del store demo ──
         logger.info("=" * 50)
         logger.info("STORE SEMILLA CREADA")
         logger.info("Email: demo@pedime.app")
-        logger.info("Contraseña: %s...%s", default_password[0], default_password[-1])
+        if DEMO_PASSWORD:
+            logger.info("Contraseña: %s...%s", default_password[0], default_password[-1])
+        else:
+            logger.info("Contraseña (generada): %s", default_password)
+            logger.info("Configurá DEMO_PASSWORD en el entorno para fijarla")
         logger.info("¡CAMBIALA apenas puedas desde el panel de admin!")
         logger.info("=" * 50)
 
