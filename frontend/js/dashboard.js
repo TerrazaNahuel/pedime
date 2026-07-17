@@ -90,6 +90,7 @@
         document.getElementById('product-image').value = '';
         document.getElementById('product-available').checked = true;
         currentVariants = [];
+        window._currentVariants = currentVariants;
         renderVariants();
     };
 
@@ -325,8 +326,10 @@
                     handle: '.product-sort',
                     onEnd: function() {
                         var ids = Array.from(productList.querySelectorAll('.product-sort')).map(function(el) { return el.dataset.id; });
-                        document.getElementById('product-order-input').value = ids.join(',');
-                        document.getElementById('save-order-btn').closest('form').classList.remove('hidden');
+                        var orderInput = document.getElementById('product-order-input');
+                        var saveBtn = document.getElementById('save-order-btn');
+                        if (orderInput) orderInput.value = ids.join(',');
+                        if (saveBtn) saveBtn.closest('form').classList.remove('hidden');
                     }
                 });
             }
@@ -338,16 +341,13 @@
     /** Muestra el modal con el código QR del menú público. */
     window.showQR = function() {
         var modal = document.getElementById('qr-modal');
+        var container = document.getElementById('qrcode');
+        if (!modal || !container) return;
+        var menuUrl = document.querySelector('[href^="/menu/"]');
+        if (!menuUrl) return;
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        var container = document.getElementById('qrcode');
         container.innerHTML = '';
-        var menuUrl = document.querySelector('[href^="/menu/"]');
-        if (!menuUrl) {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
-            return;
-        }
         var url = window.location.origin + menuUrl.getAttribute('href');
         try {
             new QRCode(container, { text: url, width: 200, height: 200 });
@@ -357,7 +357,8 @@
         setTimeout(function() {
             var canvas = container.querySelector('canvas');
             if (canvas) {
-                document.getElementById('qr-download-btn').href = canvas.toDataURL('image/png');
+                var downloadBtn = document.getElementById('qr-download-btn');
+                if (downloadBtn) downloadBtn.href = canvas.toDataURL('image/png');
             }
         }, 300);
     };

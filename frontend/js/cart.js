@@ -185,8 +185,10 @@ async function fetchMenu() {
  * También oculta el loader y muestra el meta-información.
  */
 function renderStoreDetails() {
-    document.getElementById("loading").classList.add("hidden");
-    document.getElementById("store-name").textContent = storeData.store_name;
+    var loadingEl = document.getElementById("loading");
+    var storeNameEl = document.getElementById("store-name");
+    if (loadingEl) loadingEl.classList.add("hidden");
+    if (storeNameEl) storeNameEl.textContent = storeData.store_name;
     document.title = storeData.store_name + " - Pedime";
     const color = storeData.primary_color || "#10b981";
     document.documentElement.style.setProperty("--accent", color);
@@ -206,20 +208,22 @@ function renderStoreDetails() {
     }
     printTitle.textContent = storeData.store_name;
     const meta = document.getElementById("store-meta");
-    meta.innerHTML = "";
-    const parts = [];
-    if (storeData.delivery_available) {
-        const cost = storeData.delivery_price > 0 ? "$" + storeData.delivery_price.toLocaleString("es-AR") : "Gratis";
-        parts.push("🚚 Envío: " + cost);
-    } else {
-        parts.push("🚚 Solo retiro");
+    if (meta) {
+        meta.innerHTML = "";
+        const parts = [];
+        if (storeData.delivery_available) {
+            const cost = storeData.delivery_price > 0 ? "$" + storeData.delivery_price.toLocaleString("es-AR") : "Gratis";
+            parts.push("🚚 Envío: " + cost);
+        } else {
+            parts.push("🚚 Solo retiro");
+        }
+        const methods = [];
+        if (storeData.payment_transfer) methods.push("Transferencia");
+        if (storeData.payment_cash) methods.push("Efectivo");
+        if (methods.length) parts.push("💳 " + methods.join(" / "));
+        meta.innerHTML = parts.join(" · ");
+        meta.classList.remove("hidden");
     }
-    const methods = [];
-    if (storeData.payment_transfer) methods.push("Transferencia");
-    if (storeData.payment_cash) methods.push("Efectivo");
-    if (methods.length) parts.push("💳 " + methods.join(" / "));
-    meta.innerHTML = parts.join(" · ");
-    meta.classList.remove("hidden");
 }
 
 /** Muestra u oculta el banner de "local cerrado / modo lectura". */
@@ -272,7 +276,7 @@ function renderProductCard(prod, variantsArr) {
         info.appendChild(desc);
     }
     if (variantsArr) {
-        select = document.createElement("select");
+        var select = document.createElement("select");
         select.className = "w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-2 py-1 text-white text-sm mt-1";
         select.onchange = () => updateProductQtyInDOM(prod.id);
         variantsArr.forEach((v, i) => {
@@ -395,15 +399,18 @@ function renderCategorySection(cat, pillsContainer, container) {
 function renderMenu() {
     clearTimeout(_searchTimer);
     renderStoreDetails();
-    const container = document.getElementById("menu-content");
+    var container = document.getElementById("menu-content");
+    if (!container) return;
     container.innerHTML = "";
     renderClosedBanner(container);
-    const pillsContainer = document.getElementById("category-pills");
-    pillsContainer.innerHTML = "";
+    var pillsContainer = document.getElementById("category-pills");
+    if (pillsContainer) pillsContainer.innerHTML = "";
     storeData.categories.forEach((cat) => renderCategorySection(cat, pillsContainer, container));
     container.classList.remove("hidden");
-    document.getElementById("search-section").classList.remove("hidden");
-    document.getElementById("category-nav").classList.remove("hidden");
+    var searchSection = document.getElementById("search-section");
+    var catNav = document.getElementById("category-nav");
+    if (searchSection) searchSection.classList.remove("hidden");
+    if (catNav) catNav.classList.remove("hidden");
     updateCartUI();
 }
 
@@ -645,6 +652,7 @@ if (cartClose) cartClose.onclick = () => closeCartAndSave();
  * Inicializa el método de pago si es la primera vez.
  */
 function openCart() {
+    if (!cartDrawer) return;
     if (!selectedPayment) initPayment();
     renderDeliveryToggle();
     renderPaymentSelector();
@@ -668,6 +676,7 @@ function closeCartAndSave() {
 
 /** Cierra el drawer del carrito y restaura el scroll del body. */
 function closeCart() {
+    if (!cartDrawer) return;
     cartDrawer.classList.add("hidden");
     document.body.style.overflow = "";
 }
@@ -867,6 +876,7 @@ function renderCartItemRow(id, item) {
 
 /** Actualiza el estado y texto del botón de WhatsApp según el carrito y si el local está abierto. */
 function updateWhatsAppButton() {
+    if (!whatsappBtn) return;
     if (!Object.entries(cart).length) {
         whatsappBtn.disabled = true;
         whatsappBtn.classList.add("opacity-50");
