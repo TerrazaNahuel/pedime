@@ -158,7 +158,7 @@
                 {% if store.plan == 'vip_basico' %}
                     <div class="text-center text-xs text-purple-400 font-medium">Plan actual</div>
                 {% elif store.plan == 'free' %}
-                    <button data-action="start-payment" data-plan="vip_basico" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2.5 rounded-xl transition text-sm">Contratar</button>
+                    <a href="https://mpago.la/1BEpXao" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2.5 rounded-xl transition text-sm text-center block">Contratar</a>
                 {% elif store.plan == 'vip_premium' %}
                     <div class="text-center text-xs text-gray-500">Incluido en tu plan</div>
                 {% endif %}
@@ -201,9 +201,9 @@
                 {% if store.plan == 'vip_premium' %}
                     <div class="text-center text-xs text-amber-400 font-medium">Plan actual</div>
                 {% elif store.plan == 'vip_basico' %}
-                    <button data-action="start-payment" data-plan="vip_premium" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition text-sm">Mejorar</button>
+                    <a href="https://mpago.la/33A6fSS" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition text-sm text-center block">Mejorar</a>
                 {% else %}
-                    <button data-action="start-payment" data-plan="vip_premium" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition text-sm">Contratar</button>
+                    <a href="https://mpago.la/33A6fSS" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition text-sm text-center block">Contratar</a>
                 {% endif %}
             </div>
         </div>
